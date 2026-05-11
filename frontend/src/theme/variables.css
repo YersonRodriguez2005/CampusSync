@@ -1,0 +1,15 @@
+/* Borra @tailwind base, components y utilities, y coloca esto: */
+@import "tailwindcss";
+
+/* El resto de tus variables de Ionic se mantienen intactas debajo de esto */
+:root {
+  --ion-color-primary: #3880ff;
+}
+
+ion-content {
+  --background: transparent !important;
+}
+
+* ion-page {
+  background: transparent !important;
+}
