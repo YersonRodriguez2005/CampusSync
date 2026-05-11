@@ -1,9 +1,7 @@
 import axios from 'axios';
-import { useAuthStore } from '../store/authStore'; // Importamos tu store
+import { useAuthStore } from '../store/authStore'; 
 
 const api = axios.create({
-  // Asegúrate de que esta URL base coincida con tu backend.
-  // Según tu error, estás usando /api en lugar de /api/v1
   baseURL: 'https://campussync-aruy.onrender.com/api', 
   headers: {
     'Content-Type': 'application/json',
@@ -11,8 +9,9 @@ const api = axios.create({
 });
 
 api.interceptors.request.use((config) => {
-  // Extraemos el token directamente desde la memoria de Zustand
-  const token = useAuthStore.getState().token;
+  // Le decimos explícitamente a TypeScript la estructura esperada del estado
+  const state = useAuthStore.getState() as { token: string | null };
+  const token = state.token;
   
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;

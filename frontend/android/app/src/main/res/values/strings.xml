@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">CampusSync</string>
+    <string name="title_activity_main">CampusSync</string>
+    <string name="package_name">com.nexodigital.campussync</string>
+    <string name="custom_url_scheme">com.nexodigital.campussync</string>
+</resources>
