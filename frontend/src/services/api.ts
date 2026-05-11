@@ -4,7 +4,7 @@ import { useAuthStore } from '../store/authStore'; // Importamos tu store
 const api = axios.create({
   // Asegúrate de que esta URL base coincida con tu backend.
   // Según tu error, estás usando /api en lugar de /api/v1
-  baseURL: 'http://localhost:3000/api', 
+  baseURL: 'https://campussync-aruy.onrender.com/api', 
   headers: {
     'Content-Type': 'application/json',
   },
