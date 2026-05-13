@@ -1,15 +1,23 @@
 const cron = require("node-cron");
 const pool = require("../config/db");
 const webpush = require("web-push");
+const admin = require("firebase-admin");
 
-// 1. Configuración de Web Push
+// 1. Inicializar Firebase Admin (Asegúrate de que la ruta al archivo json sea correcta)
+const serviceAccount = require("../firebase-key.json");
+if (!admin.apps.length) {
+  admin.initializeApp({
+    credential: admin.credential.cert(serviceAccount)
+  });
+}
+
+// 2. Configuración de Web Push
 webpush.setVapidDetails(
   "mailto:rodriguezyerson2005@gmail.com",
   process.env.VAPID_PUBLIC_KEY,
-  process.env.VAPID_PRIVATE_KEY,
+  process.env.VAPID_PRIVATE_KEY
 );
 
-// 2. Programar la tarea para las 8:00 AM (00 08 * * *) hora de Colombia
 const startReminderCron = () => {
   cron.schedule(
     "00 08 * * *",
@@ -17,7 +25,6 @@ const startReminderCron = () => {
       console.log("[CRON] Iniciando escaneo diario de recordatorios...");
 
       try {
-        // Consulta SQL: Buscamos evaluaciones que venzan MAÑANA y tengan suscripciones push
         const query = `
           SELECT 
             e.title as evaluation_title, 
@@ -32,32 +39,39 @@ const startReminderCron = () => {
         `;
 
         const { rows } = await pool.query(query);
+        console.log(`[CRON] Se encontraron ${rows.length} recordatorios.`);
 
-        console.log(
-          `[CRON] Se encontraron ${rows.length} recordatorios para enviar.`,
-        );
-
-        // Enviamos las notificaciones en paralelo para mayor eficiencia
         const notificationPromises = rows.map(async (item) => {
-          const payload = JSON.stringify({
-            title: "⏳ Entrega Mañana",
-            body: `Recuerda: "${item.evaluation_title}" de ${item.subject_name}.`,
-            url: "/calendar",
-          });
+          const titleStr = "⏳ Entrega Mañana";
+          const bodyStr = `Recuerda: "${item.evaluation_title}" de ${item.subject_name}.`;
+          
+          // Verificamos de qué tipo es la suscripción
+          const isFCM = item.subscription.type === 'fcm-android';
 
           try {
-            await webpush.sendNotification(item.subscription, payload);
-          } catch (error) {
-            // Si el código es 410 o 404, el token expiró y debemos borrarlo
-            if (error.statusCode === 410 || error.statusCode === 404) {
-              console.log(
-                `[CRON] Suscripción expirada detected. Eliminando ID: ${item.subscription_id}`,
-              );
-              await pool.query("DELETE FROM push_subscriptions WHERE id = $1", [
-                item.subscription_id,
-              ]);
+            if (isFCM) {
+              // --- LÓGICA PARA EL APK (FIREBASE) ---
+              const message = {
+                notification: { title: titleStr, body: bodyStr },
+                token: item.subscription.endpoint // En FCM, el endpoint es el token String
+              };
+              await admin.messaging().send(message);
+              
             } else {
-              console.error("[CRON] Error enviando push:", error);
+              // --- LÓGICA PARA LA WEB (VAPID) ---
+              const payload = JSON.stringify({ title: titleStr, body: bodyStr, url: "/calendar" });
+              await webpush.sendNotification(item.subscription.endpoint, payload);
+            }
+          } catch (error) {
+            // Manejo de errores para limpiar tokens viejos/borrados
+            const isWebExpired = !isFCM && (error.statusCode === 410 || error.statusCode === 404);
+            const isFCMExpired = isFCM && (error.code === 'messaging/registration-token-not-registered' || error.code === 'messaging/invalid-argument');
+
+            if (isWebExpired || isFCMExpired) {
+              console.log(`[CRON] Suscripción expirada. Eliminando ID: ${item.subscription_id}`);
+              await pool.query("DELETE FROM push_subscriptions WHERE id = $1", [item.subscription_id]);
+            } else {
+              console.error(`[CRON] Error enviando push (${isFCM ? 'FCM' : 'WEB'}):`, error);
             }
           }
         });
@@ -68,10 +82,7 @@ const startReminderCron = () => {
         console.error("[CRON] Error fatal en la tarea programada:", error);
       }
     },
-    {
-      scheduled: true,
-      timezone: "America/Bogota"
-    }
+    { scheduled: true, timezone: "America/Bogota" }
   );
 };
 

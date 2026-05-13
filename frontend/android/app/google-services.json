@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "608479584149",
+    "project_id": "campussync-d9994",
+    "storage_bucket": "campussync-d9994.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:608479584149:android:433af4b5043f342df1609c",
+        "android_client_info": {
+          "package_name": "com.nexodigital.campussync"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDKv8NpleE9j-dNwT1XRx6ZyGd8hmvqzHQ"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

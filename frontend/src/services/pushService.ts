@@ -1,10 +1,14 @@
+import { Capacitor } from '@capacitor/core';
+import { PushNotifications } from '@capacitor/push-notifications';
 import api from './api';
 
-const VAPID_PUBLIC_KEY = "BGZ7HPj-77A-M0KNE4hKBhAiEmNbTcFFdk8qDcRHIuYSV6oLli6CLOY3Io9vr4-WK7vbIKraClaXp9TBhmY-OiE"; // Pégala aquí
+// 1. Obtenemos la llave pública desde las variables de entorno de Vite
+// Asegúrate de que en tu archivo .env del frontend exista VITE_VAPID_PUBLIC_KEY
+const VAPID_PUBLIC_KEY = import.meta.env.VITE_VAPID_PUBLIC_KEY || '';
 
-// Función para decodificar la llave pública (requerimiento de la API del navegador)
+// 2. Función Helper: Convierte la llave Base64 a un arreglo de bytes (Requerido por la API Web Push)
 const urlBase64ToUint8Array = (base64String: string) => {
-  const padding = '='.repeat((4 - base64String.length % 4) % 4);
+  const padding = '='.repeat((4 - (base64String.length % 4)) % 4);
   const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
   const rawData = window.atob(base64);
   const outputArray = new Uint8Array(rawData.length);
@@ -14,72 +18,74 @@ const urlBase64ToUint8Array = (base64String: string) => {
   return outputArray;
 };
 
-export const enablePushNotifications = async (vapidPublicKey: string) => {
-  if (!('serviceWorker' in navigator) || !('PushManager' in window)) return;
-
-  try {
-    // 1. Pedir permiso al usuario (Muestra la alerta "CampusSync quiere enviarte notificaciones")
-    const permission = await Notification.requestPermission();
-    if (permission !== 'granted') throw new Error('Permiso denegado');
-
-    // 2. Obtener el Service Worker activo
-    const registration = await navigator.serviceWorker.ready;
-
-    // 3. Suscribirse usando la llave pública de tu backend
-    const subscription = await registration.pushManager.subscribe({
-      userVisibleOnly: true,
-      applicationServerKey: urlBase64ToUint8Array(vapidPublicKey)
-    });
-
-    // 4. Enviar el resultado al backend para guardarlo en PostgreSQL
-    await api.post('/push/subscribe', subscription);
-    
-    return true;
-  } catch (error) {
-    console.error('Error al habilitar push:', error);
-    return false;
-  }
-};
-
 export const pushService = {
   subscribeUser: async () => {
-    if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
-      throw new Error('Tu navegador no soporta notificaciones push');
-    }
-
-    try {
-      // 1. Pedir permiso al usuario ANTES de registrar el Service Worker
-      const permission = await Notification.requestPermission();
-      if (permission !== 'granted') {
-        throw new Error('Permiso de notificaciones denegado por el usuario');
+    // ─── 1. ENTORNO NATIVO (APK Android) ───
+    if (Capacitor.isNativePlatform()) {
+      let permStatus = await PushNotifications.checkPermissions();
+      
+      if (permStatus.receive === 'prompt') {
+        permStatus = await PushNotifications.requestPermissions();
+      }
+      if (permStatus.receive !== 'granted') {
+        throw new Error('Permiso denegado en Android');
       }
 
-      // 2. FORZAR el registro explícito del Service Worker
+      await PushNotifications.register();
+
+      return new Promise((resolve, reject) => {
+        PushNotifications.addListener('registration', async (token) => {
+          try {
+            await api.post('/push/subscribe', {
+              endpoint: token.value,
+              type: 'fcm-android' 
+            });
+            resolve(true);
+          } catch (err) {
+            reject(err);
+          }
+        });
+
+        PushNotifications.addListener('registrationError', (error) => {
+          reject(error);
+        });
+      });
+    } 
+    
+    // ─── 2. ENTORNO WEB / PWA ───
+    else {
+      if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
+        throw new Error('Tu navegador no soporta notificaciones push');
+      }
+
+      const permission = await Notification.requestPermission();
+      if (permission !== 'granted') throw new Error('Permiso denegado');
+
       const registration = await navigator.serviceWorker.register('/custom-sw.js');
-      
-      // Asegurarnos de que está instalado y activo
       await navigator.serviceWorker.ready;
 
-      // 3. Revisar si ya existe una suscripción activa en el navegador
       let subscription = await registration.pushManager.getSubscription();
-      
       if (!subscription) {
-        // Generar una nueva suscripción atada a tu llave VAPID
+        // Validación de seguridad para que no intente suscribir si falta la llave en el .env
+        if (!VAPID_PUBLIC_KEY) {
+            throw new Error('No se encontró VITE_VAPID_PUBLIC_KEY en el entorno.');
+        }
+
         subscription = await registration.pushManager.subscribe({
           userVisibleOnly: true,
           applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY)
         });
       }
 
-      // 4. Enviar a PostgreSQL a través de tu Backend
-      await api.post('/push/subscribe', subscription);
+      await api.post('/push/subscribe', {
+         endpoint: subscription,
+         type: 'web-push'
+      });
       return true;
-
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    } catch (error: any) {
-      console.error('Error detallado en PushService:', error);
-      // Lanzamos el error para que el componente (NotificationBanner) muestre el toast rojo
-      throw error; 
     }
+  },
+
+  sendTest: async () => {
+    await api.post('/push/send-test');
   }
 };
