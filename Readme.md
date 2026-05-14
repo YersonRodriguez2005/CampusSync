@@ -2,6 +2,28 @@
 
 > Plataforma móvil para estudiantes universitarios. Seguimiento de semestres, materias, calificaciones y evaluaciones en tiempo real, con agenda académica, temporizador Pomodoro y notas rápidas — todo bajo una estética Dark Academic Premium.
 
+---
+ 
+## Capturas de Pantalla
+ 
+<br>
+| Login | Registro | Dashboard |
+|:---:|:---:|:---:|
+| <img src="./docs/assets/login.png" alt="Login" width="220"/> | <img src="./docs/assets/register.png" alt="Registro" width="220"/> | <img src="./docs/assets/dashboard.png" alt="Dashboard" width="220"/> |
+ 
+<br>
+| Semestres | Materias | Calificaciones |
+|:---:|:---:|:---:|
+| <img src="./docs/assets/terms.png" alt="Semestres" width="220"/> | <img src="./docs/assets/subjects.png" alt="Materias" width="220"/> | <img src="./docs/assets/evaluations.png" alt="Calificaciones" width="220"/> |
+ 
+<br>
+| Calendario | Pomodoro | Recuperar Contraseña |
+|:---:|:---:|:---:|
+| <img src="./docs/assets/calendar.png" alt="Calendario" width="220"/> | <img src="./docs/assets/study-methods.png" alt="Pomodoro" width="220"/> | <img src="./docs/assets/reset-password.png" alt="Recuperar Contraseña" width="220"/> |
+ 
+<br>
+
+---
 
 ## Tabla de Contenidos
 
