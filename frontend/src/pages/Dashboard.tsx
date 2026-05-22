@@ -322,12 +322,22 @@ const Dashboard: React.FC = () => {
   };
 
   useEffect(() => {
-    const h = new Date().getHours();
-    setGreeting(
-      h < 12 ? "Buenos días" : h < 18 ? "Buenas tardes" : "Buenas noches",
-    );
-    loadData();
-  }, []);
+  // 1. Configurar el saludo
+  const h = new Date().getHours();
+  setGreeting(
+    h < 12 ? "Buenos días" : h < 18 ? "Buenas tardes" : "Buenas noches"
+  );
+  
+  // 2. Carga inicial de datos al entrar al Dashboard
+  loadData();
+
+  // 3. Escuchar el evento que configuramos en la otra vista
+  window.addEventListener('grades-updated', loadData);
+
+  return () => {
+    window.removeEventListener('grades-updated', loadData);
+  };
+}, []);
 
   const doRefresh = async (event: CustomEvent) => {
     setShowChart(false);

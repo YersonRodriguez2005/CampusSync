@@ -327,7 +327,6 @@ const Evaluations: React.FC = () => {
       setTitle(ev.title);
       setWeight(ev.weight_percentage);
       setScore(ev.score === null ? '' : ev.score);
-      // Si la evaluación ya tiene fecha, la cargamos; si no, ponemos la de hoy
       setDueDate(ev.due_date ? ev.due_date.split('T')[0] : new Date().toISOString().split('T')[0]);
     } else {
       setEditingEval(null);
@@ -337,11 +336,15 @@ const Evaluations: React.FC = () => {
     setShowModal(true);
   };
 
+  // --- SOLUCIÓN: Función para avisar al Dashboard ---
+  const notifyDashboardUpdate = () => {
+    window.dispatchEvent(new CustomEvent('grades-updated'));
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!title.trim() || weight === '') return;
     try {
-      // Agregamos due_date al payload que se envía al backend
       const payload = { 
         subject_id: subjectId, 
         title, 
@@ -362,6 +365,10 @@ const Evaluations: React.FC = () => {
         toast.success('Actividad registrada');
       }
       setShowModal(false);
+      
+      // Lanzamos el evento tras una actualización exitosa
+      notifyDashboardUpdate();
+      
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (error: any) { toast.error(error); }
   };
@@ -373,6 +380,10 @@ const Evaluations: React.FC = () => {
       setEvaluations(evaluations.filter(ev => ev.id !== delTarget.id));
       setMetrics({ total_weight: res.subject_metrics.total_weight_assigned, current_score: res.subject_metrics.current_accumulated_score });
       toast.success('Nota eliminada');
+      
+      // Lanzamos el evento tras eliminar exitosamente
+      notifyDashboardUpdate();
+      
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (error: any) { toast.error(error); }
     finally { setDelTarget(null); }
@@ -385,7 +396,7 @@ const Evaluations: React.FC = () => {
 
   const remaining  = 100 - totalW;
   const pendingW   = evaluations.filter(ev => ev.score === null).reduce((a, ev) => a + Number(ev.weight_percentage), 0);
-
+  
   return (
     <IonPage>
       <style>{CSS}</style>
