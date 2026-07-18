@@ -3,6 +3,7 @@ import { Redirect, Route } from "react-router-dom";
 import { IonApp, IonRouterOutlet, setupIonicReact } from "@ionic/react";
 import { IonReactRouter } from "@ionic/react-router";
 import { Toaster, ToastBar, toast } from "react-hot-toast";
+import { LuX } from "react-icons/lu";
 
 /* ── Páginas ── */
 import Login from "./pages/Login";
@@ -33,20 +34,16 @@ import "@ionic/react/css/display.css";
 import "./theme/variables.css";
 
 setupIonicReact({
-  // Evita que Ionic sobreescriba el fondo con su propio color
   mode: "ios",
 });
 
-// ─── Custom Toaster renderer ──────────────────────────────────────────────────
-// Centraliza el estilo glassmorphism de los toasts aquí para que las páginas
-// solo necesiten llamar a toast.success / toast.error simples.
+// ─── Custom Toaster renderer (Glassmorphism con Tailwind V4) ────────────────
 const CustomToaster: React.FC = () => (
   <Toaster
     position="top-center"
     gutter={10}
     toastOptions={{
       duration: 4000,
-      // Estilos base (sobreescritos por ToastBar abajo)
       style: { background: "transparent", boxShadow: "none", padding: 0 },
     }}
   >
@@ -58,79 +55,31 @@ const CustomToaster: React.FC = () => (
         {({ message }) => {
           const isSuccess = t.type === "success";
           const isError = t.type === "error";
-          const accent = isSuccess
-            ? "#10b981"
-            : isError
-              ? "#f87171"
-              : "#818cf8";
+          const accent = isSuccess ? "#10b981" : isError ? "#f87171" : "#818cf8";
           const label = isSuccess ? "Éxito" : isError ? "Error" : "Info";
 
           return (
             <div
               onClick={() => toast.dismiss(t.id)}
-              style={{
-                display: "flex",
-                alignItems: "stretch",
-                maxWidth: "380px",
-                width: "100%",
-                background: "rgba(15,23,42,0.96)",
-                backdropFilter: "blur(20px)",
-                borderRadius: "16px",
-                overflow: "hidden",
-                boxShadow: "0 20px 48px rgba(0,0,0,0.55)",
-                border: "1px solid rgba(99,102,241,0.14)",
-                borderLeft: `4px solid ${accent}`,
-                opacity: t.visible ? 1 : 0,
-                transition: "opacity 0.22s",
-                cursor: "pointer",
-                fontFamily: "'DM Sans', system-ui, sans-serif",
-              }}
+              className={`flex items-stretch w-full max-w-95 bg-slate-900/95 backdrop-blur-xl rounded-2xl overflow-hidden shadow-2xl border border-indigo-500/15 border-l-4 transition-all duration-300 cursor-pointer ${
+                t.visible ? "opacity-100 scale-100 translate-y-0" : "opacity-0 scale-95 -translate-y-4"
+              }`}
+              style={{ borderLeftColor: accent }}
             >
-              <div style={{ flex: 1, padding: "14px 16px" }}>
+              <div className="flex-1 px-4 py-3.5">
                 <p
-                  style={{
-                    margin: 0,
-                    fontSize: "10px",
-                    fontWeight: 700,
-                    letterSpacing: "0.09em",
-                    textTransform: "uppercase",
-                    color: accent,
-                  }}
+                  className="m-0 text-[10px] font-bold tracking-[0.09em] uppercase"
+                  style={{ color: accent }}
                 >
                   {label}
                 </p>
-                <div
-                  style={{
-                    margin: "4px 0 0",
-                    fontSize: "13px",
-                    color: "#cbd5e1",
-                    lineHeight: 1.5,
-                  }}
-                >
+                <div className="m-0 mt-1 text-[13px] text-slate-200 leading-relaxed font-medium">
                   {message}
                 </div>
               </div>
-              {/* Dismiss hint */}
-              <div
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  padding: "0 16px",
-                  borderLeft: "1px solid rgba(99,102,241,0.1)",
-                }}
-              >
-                <svg
-                  width="14"
-                  height="14"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="rgba(148,163,184,0.4)"
-                  strokeWidth="2.2"
-                  strokeLinecap="round"
-                >
-                  <line x1="18" y1="6" x2="6" y2="18" />
-                  <line x1="6" y1="6" x2="18" y2="18" />
-                </svg>
+              {/* Botón Cerrar (Dismiss Hint) */}
+              <div className="flex items-center px-4 border-l border-indigo-500/10 hover:bg-white/5 transition-colors">
+                <LuX className="text-slate-500 text-base" />
               </div>
             </div>
           );
@@ -142,47 +91,27 @@ const CustomToaster: React.FC = () => (
 
 // ─── App ──────────────────────────────────────────────────────────────────────
 const App: React.FC = () => (
-  <IonApp>
+  <IonApp className="bg-[#020817]">
     {/* Toaster glassmorphism global */}
     <CustomToaster />
 
     <IonReactRouter>
-      <IonRouterOutlet animated>
+      <IonRouterOutlet animated className="bg-[#020817]">
         {/* Auth */}
-        <Route exact path="/login">
-          <Login />
-        </Route>
-        <Route exact path="/register">
-          <Register />
-        </Route>
-        <Route exact path="/reset-password/:token">
-          <ResetPassword />
-        </Route>
+        <Route exact path="/login"><Login /></Route>
+        <Route exact path="/register"><Register /></Route>
+        <Route exact path="/reset-password/:token"><ResetPassword /></Route>
 
         {/* Redirect raíz → login */}
-        <Route exact path="/">
-          <Redirect to="/login" />
-        </Route>
+        <Route exact path="/"><Redirect to="/login" /></Route>
 
         {/* App (protegidas) */}
-        <Route path="/dashboard">
-          <Dashboard />
-        </Route>
-        <Route exact path="/terms">
-          <Terms />
-        </Route>
-        <Route exact path="/terms/:termId/subjects">
-          <Subjects />
-        </Route>
-        <Route exact path="/subjects/:subjectId/evaluations">
-          <Evaluations />
-        </Route>
-        <Route exact path="/calendar">
-          <Calendar />
-        </Route>
-        <Route exact path="/study-methods">
-          <StudyMethods />
-        </Route>
+        <Route path="/dashboard"><Dashboard /></Route>
+        <Route exact path="/terms"><Terms /></Route>
+        <Route exact path="/terms/:termId/subjects"><Subjects /></Route>
+        <Route exact path="/subjects/:subjectId/evaluations"><Evaluations /></Route>
+        <Route exact path="/calendar"><Calendar /></Route>
+        <Route exact path="/study-methods"><StudyMethods /></Route>
       </IonRouterOutlet>
     </IonReactRouter>
   </IonApp>

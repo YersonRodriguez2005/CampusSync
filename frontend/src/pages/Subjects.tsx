@@ -1,250 +1,56 @@
 import React, { useEffect, useState } from 'react';
 import { IonPage, IonContent } from '@ionic/react';
 import { useParams, useHistory } from 'react-router-dom';
+import { 
+  LuChevronLeft, 
+  LuPlus, 
+  LuCalculator, 
+  LuPen, 
+  LuTrash2, 
+  LuTriangleAlert,
+  LuBookOpen
+} from 'react-icons/lu';
 import { subjectService, Subject } from '../services/subjectService';
 import toast from 'react-hot-toast';
 
-// ─── CSS ──────────────────────────────────────────────────────────────────────
-const CSS = `
-  @keyframes cs-fadeUp {
-    from { opacity: 0; transform: translateY(14px); }
-    to   { opacity: 1; transform: translateY(0); }
-  }
-  @keyframes cs-floatA {
-    0%,100% { transform: translate(0,0); }
-    50%      { transform: translate(16px,-22px); }
-  }
-  @keyframes cs-floatB {
-    0%,100% { transform: translate(0,0); }
-    50%      { transform: translate(-12px,18px); }
-  }
-  @keyframes cs-slideSheet {
-    from { opacity: 0; transform: translateY(100%); }
-    to   { opacity: 1; transform: translateY(0); }
-  }
-  @keyframes cs-scaleIn {
-    from { opacity: 0; transform: scale(0.94); }
-    to   { opacity: 1; transform: scale(1); }
-  }
-  @keyframes cs-shimmer {
-    0%   { background-position: -400px 0; }
-    100% { background-position:  400px 0; }
-  }
-
-  .cs-font-display { font-family: 'Sora', system-ui, sans-serif; }
-  .cs-font-body    { font-family: 'DM Sans', system-ui, sans-serif; }
-
-  .cs-glass {
-    background: rgba(15,23,42,0.72);
-    backdrop-filter: blur(28px);
-    -webkit-backdrop-filter: blur(28px);
-    border: 1px solid rgba(99,102,241,0.18);
-    box-shadow: 0 20px 48px rgba(0,0,0,0.45), inset 0 1px 0 rgba(255,255,255,0.06);
-  }
-
-  /* ── Back & FAB ── */
-  .cs-back-btn {
-    width: 40px; height: 40px; border-radius: 14px;
-    background: rgba(99,102,241,0.12); border: 1px solid rgba(99,102,241,0.2);
-    display: flex; align-items: center; justify-content: center;
-    cursor: pointer; color: rgba(165,180,252,0.85); outline: none;
-    transition: background 0.18s;
-  }
-  .cs-back-btn:active { background: rgba(99,102,241,0.28); }
-
-  .cs-fab {
-    width: 44px; height: 44px; border-radius: 15px;
-    background: linear-gradient(135deg, #6366f1, #8b5cf6); border: none;
-    display: flex; align-items: center; justify-content: center;
-    cursor: pointer; color: white;
-    box-shadow: 0 4px 18px rgba(99,102,241,0.4);
-    transition: transform 0.18s, box-shadow 0.18s; outline: none;
-  }
-  .cs-fab:active { transform: scale(0.94); }
-
-  /* ── Subject card ── */
-  .cs-subject-card {
-    background: rgba(15,23,42,0.65);
-    border: 1px solid rgba(99,102,241,0.13);
-    border-radius: 20px;
-    padding: 16px 18px;
-    display: flex; align-items: center; gap: 14px;
-    cursor: pointer;
-    transition: transform 0.18s, border-color 0.18s, background 0.18s;
-    animation: cs-scaleIn 0.4s cubic-bezier(.22,1,.36,1) both;
-  }
-  .cs-subject-card:active { transform: scale(0.98); }
-  .cs-subject-card:hover  { border-color: rgba(99,102,241,0.28); background: rgba(15,23,42,0.85); }
-
-  /* ── Subject color dot ── */
-  .cs-subject-icon {
-    width: 44px; height: 44px; border-radius: 15px;
-    display: flex; align-items: center; justify-content: center;
-    font-family: 'Sora', sans-serif; font-size: 16px; font-weight: 800;
-    flex-shrink: 0;
-  }
-
-  /* ── Score pill ── */
-  .cs-score-pill {
-    display: inline-flex; align-items: center;
-    border-radius: 20px; padding: 4px 10px;
-    font-family: 'Sora', system-ui, sans-serif;
-    font-size: 13px; font-weight: 700; white-space: nowrap;
-  }
-
-  /* ── Progress bar bg ── */
-  .cs-progress-track {
-    height: 3px; border-radius: 2px;
-    background: rgba(99,102,241,0.1); overflow: hidden; margin-top: 6px;
-  }
-  .cs-progress-fill {
-    height: 100%; border-radius: 2px;
-    transition: width 0.6s cubic-bezier(.22,1,.36,1);
-  }
-
-  /* ── Edit/Delete/Project buttons ── */
-  .cs-icon-btn {
-    width: 34px; height: 34px; border-radius: 11px; border: none;
-    display: flex; align-items: center; justify-content: center;
-    cursor: pointer; transition: background 0.18s; outline: none; flex-shrink: 0;
-  }
-
-  /* ── Input ── */
-  .cs-input {
-    width: 100%; height: 52px; padding: 0 16px;
-    border-radius: 14px; font-size: 15px;
-    font-family: 'DM Sans', system-ui, sans-serif;
-    background: rgba(30,41,59,0.75);
-    border: 1.5px solid rgba(99,102,241,0.14);
-    color: #f1f5f9; outline: none;
-    transition: border-color 0.22s, box-shadow 0.22s, background 0.22s;
-    box-sizing: border-box; appearance: none;
-  }
-  .cs-input::placeholder { color: rgba(148,163,184,0.38); }
-  .cs-input:focus {
-    border-color: #6366f1; background: rgba(30,41,59,0.95);
-    box-shadow: 0 0 0 3px rgba(99,102,241,0.14);
-  }
-
-  /* ── Slider (Range) Customization ── */
-  .cs-range {
-    -webkit-appearance: none; width: 100%; background: transparent; margin: 10px 0;
-  }
-  .cs-range::-webkit-slider-thumb {
-    -webkit-appearance: none; height: 24px; width: 24px;
-    border-radius: 50%; background: #a855f7; cursor: pointer;
-    margin-top: -10px; box-shadow: 0 0 12px rgba(168,85,247,0.5);
-    transition: transform 0.1s;
-  }
-  .cs-range::-webkit-slider-thumb:active { transform: scale(1.15); }
-  .cs-range::-webkit-slider-runnable-track {
-    width: 100%; height: 6px; cursor: pointer;
-    background: rgba(99,102,241,0.2); border-radius: 3px;
-  }
-
-  /* ── Primary button ── */
-  .cs-btn-primary {
-    flex: 1; height: 52px; border: none; border-radius: 14px;
-    color: white; font-family: 'Sora', system-ui, sans-serif;
-    font-size: 15px; font-weight: 700; cursor: pointer;
-    display: flex; align-items: center; justify-content: center;
-    background: linear-gradient(135deg, #6366f1, #8b5cf6);
-    box-shadow: 0 4px 20px rgba(99,102,241,0.35);
-    transition: transform 0.18s;
-  }
-  .cs-btn-primary:active { transform: scale(0.98); }
-
-  .cs-btn-cancel {
-    flex: 1; height: 52px; border: none; border-radius: 14px;
-    color: rgba(148,163,184,0.6); font-family: 'DM Sans', system-ui, sans-serif;
-    font-size: 15px; font-weight: 600; cursor: pointer; background: transparent;
-  }
-
-  /* ── Label ── */
-  .cs-label {
-    display: block; font-family: 'DM Sans', system-ui, sans-serif;
-    font-size: 11px; font-weight: 600;
-    letter-spacing: 0.075em; text-transform: uppercase;
-    color: rgba(148,163,184,0.65); margin-bottom: 8px; margin-left: 2px;
-  }
-
-  /* ── Orbs ── */
-  .cs-orb-a {
-    position: absolute; top: -100px; right: -70px;
-    width: 260px; height: 260px; border-radius: 50%;
-    background: radial-gradient(circle, rgba(99,102,241,0.26) 0%, transparent 68%);
-    animation: cs-floatA 9s ease-in-out infinite; pointer-events: none;
-  }
-  .cs-orb-b {
-    position: absolute; bottom: -50px; left: -50px;
-    width: 180px; height: 180px; border-radius: 50%;
-    background: radial-gradient(circle, rgba(34,211,238,0.13) 0%, transparent 68%);
-    animation: cs-floatB 12s ease-in-out infinite; pointer-events: none;
-  }
-
-  /* ── Skeleton ── */
-  .cs-skeleton {
-    border-radius: 20px; overflow: hidden;
-    background: rgba(30,41,59,0.6); position: relative;
-  }
-  .cs-skeleton::after {
-    content: ''; position: absolute; inset: 0;
-    background: linear-gradient(90deg, transparent 0%, rgba(99,102,241,0.07) 50%, transparent 100%);
-    background-size: 400px 100%; animation: cs-shimmer 1.6s ease-in-out infinite;
-  }
-
-  .cs-a0 { animation: cs-fadeUp 0.5s cubic-bezier(.22,1,.36,1) both; }
-  .cs-a1 { animation: cs-fadeUp 0.5s cubic-bezier(.22,1,.36,1) 0.07s both; }
-  .cs-sheet { animation: cs-slideSheet 0.38s cubic-bezier(.22,1,.36,1) both; }
-  .cs-section-label {
-    font-family: 'DM Sans', system-ui, sans-serif;
-    font-size: 10px; font-weight: 700;
-    letter-spacing: 0.1em; text-transform: uppercase;
-    color: rgba(148,163,184,0.38); margin-bottom: 10px; display: block;
-  }
-`;
-
-// ─── Color palette for subjects (cycles) ─────────────────────────────────────
+// ─── Paleta de colores para los íconos de las materias (Tailwind Classes) ────
 const PALETTE = [
-  { bg: 'rgba(99,102,241,0.15)',  color: '#818cf8', border: 'rgba(99,102,241,0.25)' },
-  { bg: 'rgba(52,211,153,0.12)',  color: '#34d399', border: 'rgba(52,211,153,0.22)' },
-  { bg: 'rgba(251,146,60,0.12)',  color: '#fb923c', border: 'rgba(251,146,60,0.22)' },
-  { bg: 'rgba(34,211,238,0.12)',  color: '#22d3ee', border: 'rgba(34,211,238,0.22)' },
-  { bg: 'rgba(244,114,182,0.12)', color: '#f472b6', border: 'rgba(244,114,182,0.22)' },
-  { bg: 'rgba(250,204,21,0.12)',  color: '#facc15', border: 'rgba(250,204,21,0.22)' },
+  'bg-indigo-500/15 text-indigo-400 border-indigo-500/20',
+  'bg-emerald-500/15 text-emerald-400 border-emerald-500/20',
+  'bg-orange-500/15 text-orange-400 border-orange-500/20',
+  'bg-cyan-500/15 text-cyan-400 border-cyan-500/20',
+  'bg-pink-500/15 text-pink-400 border-pink-500/20',
+  'bg-yellow-500/15 text-yellow-400 border-yellow-500/20',
 ];
 
-function scoreColor(avg: number | null | undefined): { bg: string; color: string } {
-  if (!avg) return { bg: 'rgba(100,116,139,0.12)', color: 'rgba(100,116,139,0.6)' };
-  if (avg >= 4.0) return { bg: 'rgba(52,211,153,0.12)',  color: '#34d399' };
-  if (avg >= 3.0) return { bg: 'rgba(99,102,241,0.12)',  color: '#818cf8' };
-  return              { bg: 'rgba(251,146,60,0.12)',  color: '#fb923c' };
+// Helper para colores de notas
+function getScoreClasses(avg: number | null | undefined): { pill: string; fill: string } {
+  if (!avg) return { pill: 'bg-slate-700/30 text-slate-400', fill: 'bg-slate-600' };
+  if (avg >= 4.0) return { pill: 'bg-emerald-500/15 text-emerald-400', fill: 'bg-emerald-400' };
+  if (avg >= 3.0) return { pill: 'bg-indigo-500/15 text-indigo-400', fill: 'bg-indigo-400' };
+  return { pill: 'bg-orange-500/15 text-orange-400', fill: 'bg-orange-400' };
 }
 
-// ─── Confirm delete ───────────────────────────────────────────────────────────
+// ─── Confirm Delete Modal (Glassmorphism) ─────────────────────────────────────
 interface ConfirmProps { name: string; onConfirm: () => void; onCancel: () => void; }
 const ConfirmDelete: React.FC<ConfirmProps> = ({ name, onConfirm, onCancel }) => (
   <div
-    style={{ position: 'fixed', inset: 0, zIndex: 60, background: 'rgba(2,8,23,0.85)', backdropFilter: 'blur(10px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}
+    className="fixed inset-0 z-60 bg-[#020817]/85 backdrop-blur-sm flex items-center justify-center p-5 animate-fade-in"
     onClick={(e) => { if (e.target === e.currentTarget) onCancel(); }}
   >
-    <div className="cs-glass" style={{ borderRadius: '24px', padding: '32px 28px', width: '100%', maxWidth: '360px', animation: 'cs-scaleIn 0.3s cubic-bezier(.22,1,.36,1) both' }}>
-      <div style={{ width: '52px', height: '52px', borderRadius: '18px', background: 'rgba(248,113,113,0.1)', border: '1px solid rgba(248,113,113,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '20px' }}>
-        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#f87171" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-          <polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/>
-          <path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/>
-        </svg>
+    <div className="cs-glass-card w-full max-w-90 animate-slide-up" style={{ animationDuration: '0.3s' }}>
+      <div className="w-14 h-14 rounded-2xl bg-red-500/10 border border-red-500/20 flex items-center justify-center mb-5">
+        <LuTriangleAlert className="text-red-400 text-2xl" />
       </div>
-      <h3 className="cs-font-display" style={{ margin: '0 0 8px', fontSize: '18px', fontWeight: 700, color: '#f1f5f9' }}>¿Eliminar materia?</h3>
-      <p className="cs-font-body" style={{ margin: '0 0 24px', fontSize: '13px', color: 'rgba(148,163,184,0.6)', lineHeight: 1.65 }}>
-        Se eliminarán <strong style={{ color: '#f1f5f9' }}>{name}</strong> y todas sus notas. Esta acción es irreversible.
+      <h3 className="m-0 mb-2 text-xl font-extrabold text-slate-50 font-serif">¿Eliminar materia?</h3>
+      <p className="m-0 mb-6 text-[13px] text-slate-400 leading-relaxed font-medium">
+        Se eliminarán <strong className="text-slate-200">{name}</strong> y todas sus notas. Esta acción es irreversible.
       </p>
-      <div style={{ display: 'flex', gap: '10px' }}>
-        <button className="cs-btn-cancel" onClick={onCancel}>Cancelar</button>
-        <button
-          onClick={onConfirm}
-          style={{ flex: 1, height: '48px', border: '1px solid rgba(248,113,113,0.25)', borderRadius: '14px', background: 'rgba(248,113,113,0.12)', color: '#f87171', fontFamily: "'Sora',sans-serif", fontSize: '14px', fontWeight: 700, cursor: 'pointer' }}
-        >
+      <div className="flex gap-3">
+        <button onClick={onCancel} className="flex-1 h-12 rounded-xl text-sm font-bold text-slate-400 hover:bg-white/5 transition-colors">
+          Cancelar
+        </button>
+        <button onClick={onConfirm} className="flex-1 h-12 rounded-xl bg-red-500/15 border border-red-500/30 text-red-400 font-bold active:scale-95 transition-all">
           Eliminar
         </button>
       </div>
@@ -254,14 +60,14 @@ const ConfirmDelete: React.FC<ConfirmProps> = ({ name, onConfirm, onCancel }) =>
 
 // ─── Skeleton ─────────────────────────────────────────────────────────────────
 const SkeletonRows: React.FC = () => (
-  <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+  <div className="flex flex-col gap-3">
     {[1, 2, 3, 4].map((i) => (
-      <div key={i} className="cs-skeleton" style={{ height: '78px', animationDelay: `${i * 0.08}s` }} />
+      <div key={i} className="h-21 rounded-2xl bg-slate-800/50 border border-white/5 animate-pulse" style={{ animationDelay: `${i * 100}ms` }} />
     ))}
   </div>
 );
 
-// ─── Component ────────────────────────────────────────────────────────────────
+// ─── Main Component ───────────────────────────────────────────────────────────
 const Subjects: React.FC = () => {
   const { termId } = useParams<{ termId: string }>();
   const history    = useHistory();
@@ -287,7 +93,7 @@ const Subjects: React.FC = () => {
       const data = await subjectService.getByTerm(termId);
       setSubjects(data);
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    } catch (error: any) { toast.error(error); }
+    } catch (error: any) { toast.error(error.message || "Error al cargar materias"); }
     finally { setLoading(false); }
   };
 
@@ -320,7 +126,7 @@ const Subjects: React.FC = () => {
       }
       setShowModal(false);
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    } catch (error: any) { toast.error(error); }
+    } catch (error: any) { toast.error(error.message || "Error al guardar"); }
   };
 
   const confirmDelete = async () => {
@@ -330,7 +136,7 @@ const Subjects: React.FC = () => {
       setSubjects(subjects.filter(s => s.id !== delTarget.id));
       toast.success('Materia eliminada');
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    } catch (error: any) { toast.error(error); }
+    } catch (error: any) { toast.error(error.message || "Error al eliminar"); }
     finally { setDelTarget(null); }
   };
 
@@ -338,84 +144,67 @@ const Subjects: React.FC = () => {
   const openProjector = (subject: Subject) => {
     setProjSubject(subject);
     setProjTarget(Number(subject.target_score) || 3.0);
-    // Pre-cargamos el acumulado actual si la materia ya tiene notas, sino lo dejamos vacío
     setProjAccumulated(subject.current_average ? Number(subject.current_average) : '');
     setProjPendingWeight(''); 
     setShowProjector(true);
   };
 
-  // Lógica Matemática de Proyección
   const getRequiredScore = () => {
     if (projAccumulated === '' || projPendingWeight === '' || Number(projPendingWeight) <= 0) return null;
-    
     const acc = Number(projAccumulated);
     const pend = Number(projPendingWeight) / 100;
-    
-    // Fórmula: (Meta - Acumulado Actual) / (Porcentaje Restante / 100)
-    const required = (projTarget - acc) / pend;
-    return required;
+    return (projTarget - acc) / pend;
   };
 
   const requiredScore = getRequiredScore();
 
   return (
     <IonPage>
-      <style>{CSS}</style>
-
       <IonContent style={{ '--background': 'transparent' } as React.CSSProperties} scrollY>
-        <div style={{
-          minHeight: '100%',
-          background: 'linear-gradient(160deg, #020817 0%, #0f172a 55%, #080d1a 100%)',
-          position: 'relative', paddingBottom: '40px',
-        }}>
+        <div className="min-h-full bg-linear-to-br from-[#020817] via-[#0f172a] to-[#080d1a] relative pb-10 overflow-hidden">
 
-          <div style={{
-            position: 'fixed', inset: 0, pointerEvents: 'none', zIndex: 0,
-            backgroundImage: 'radial-gradient(rgba(99,102,241,0.09) 1px, transparent 1px)',
-            backgroundSize: '28px 28px',
-          }} />
+          {/* ── Orbes y Malla (GPU Accelerated) ── */}
+          <div className="absolute -top-24 -right-20 w-75 h-75 rounded-full bg-[radial-gradient(circle,rgba(99,102,241,0.2)_0%,transparent_70%)] animate-float-orb-a pointer-events-none" />
+          <div className="absolute top-[30%] -left-12 w-50 h-50 rounded-full bg-[radial-gradient(circle,rgba(34,211,238,0.12)_0%,transparent_70%)] animate-float-orb-b pointer-events-none" />
+          <div className="absolute inset-0 pointer-events-none bg-[radial-gradient(rgba(99,102,241,0.08)_1px,transparent_1px)] bg-size-[28px_28px] z-0" />
 
           {/* ── Header ── */}
-          <div style={{ position: 'relative', padding: '52px 20px 32px', overflow: 'hidden', zIndex: 1 }}>
-            <div className="cs-orb-a" />
-            <div className="cs-orb-b" />
-
-            <div className="cs-a0" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', position: 'relative', zIndex: 2 }}>
-              <button className="cs-back-btn" onClick={() => history.goBack()} aria-label="Volver">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.3" strokeLinecap="round" strokeLinejoin="round">
-                  <polyline points="15 18 9 12 15 6"/>
-                </svg>
+          <div className="relative z-10 pt-14 px-6 pb-6 animate-slide-up" style={{ animationDelay: '0ms' }}>
+            <div className="flex justify-between items-center mb-6">
+              <button 
+                onClick={() => history.goBack()} 
+                className="w-11 h-11 rounded-2xl bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center text-indigo-400 active:scale-95 transition-all"
+              >
+                <LuChevronLeft className="text-2xl" />
               </button>
-              <button className="cs-fab" onClick={() => openModal()} aria-label="Nueva materia">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.4" strokeLinecap="round">
-                  <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
-                </svg>
+              
+              <button 
+                onClick={() => openModal()} 
+                className="w-12 h-12 rounded-2xl bg-linear-to-r from-indigo-500 to-purple-600 flex items-center justify-center text-white shadow-[0_4px_15px_rgba(99,102,241,0.4)] active:scale-95 transition-all"
+              >
+                <LuPlus className="text-2xl" />
               </button>
             </div>
 
-            <div className="cs-a1" style={{ marginTop: '24px', position: 'relative', zIndex: 2 }}>
-              <h1 className="cs-font-display" style={{ margin: 0, fontSize: '28px', fontWeight: 800, color: '#f8fafc', letterSpacing: '-0.025em' }}>
-                Materias
-              </h1>
-              <p className="cs-font-body" style={{ margin: '6px 0 0', fontSize: '13px', color: 'rgba(148,163,184,0.5)', fontWeight: 500 }}>
-                {subjects.length > 0 ? `${subjects.length} materia${subjects.length !== 1 ? 's' : ''} registrada${subjects.length !== 1 ? 's' : ''}` : 'Sin materias aún'}
+            <div>
+              <h1 className="m-0 text-3xl font-extrabold text-slate-50 tracking-tight font-serif">Materias</h1>
+              <p className="mt-1 text-sm text-slate-400 font-medium">
+                {subjects.length > 0 ? `${subjects.length} registrada${subjects.length !== 1 ? 's' : ''}` : 'Organiza tus asignaturas'}
               </p>
             </div>
           </div>
 
-          {/* ── List ── */}
-          <div style={{ position: 'relative', zIndex: 1, padding: '0 20px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+          {/* ── Listado de Materias ── */}
+          <div className="relative z-10 px-5 flex flex-col gap-3">
             {loading ? (
               <SkeletonRows />
             ) : subjects.length === 0 ? (
-              <div style={{ textAlign: 'center', padding: '60px 0' }}>
-                <div style={{ width: '64px', height: '64px', borderRadius: '22px', background: 'rgba(99,102,241,0.1)', border: '1px solid rgba(99,102,241,0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px' }}>
-                  <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="rgba(99,102,241,0.5)" strokeWidth="1.8" strokeLinecap="round">
-                    <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/>
-                  </svg>
+              <div className="mt-10 flex flex-col items-center justify-center text-center animate-slide-up">
+                <div className="w-16 h-16 rounded-3xl bg-indigo-500/10 border border-indigo-500/15 flex items-center justify-center mb-4">
+                  <LuBookOpen className="text-indigo-400 text-3xl opacity-80" />
                 </div>
-                <p className="cs-font-body" style={{ margin: 0, fontSize: '14px', color: 'rgba(148,163,184,0.4)', fontStyle: 'italic' }}>Aún no hay materias registradas.</p>
-                <p className="cs-font-body" style={{ margin: '6px 0 0', fontSize: '12px', color: 'rgba(148,163,184,0.25)' }}>Pulsa + para añadir una.</p>
+                <p className="text-slate-400 text-sm italic font-medium m-0">Aún no hay materias registradas.</p>
+                <p className="text-slate-500 text-xs mt-1">Toca el botón + para añadir una.</p>
               </div>
             ) : (
               subjects.map((subject, idx) => {
@@ -423,85 +212,67 @@ const Subjects: React.FC = () => {
                 const avg      = subject.current_average ? Number(subject.current_average) : null;
                 const target   = Number(subject.target_score);
                 const pct      = avg ? Math.min(avg / target, 1) : 0;
-                const sc       = scoreColor(avg);
+                const sc       = getScoreClasses(avg);
                 const initials = subject.name.split(' ').map(w => w[0]).join('').substring(0, 2).toUpperCase();
 
                 return (
                   <div
                     key={subject.id}
-                    className="cs-subject-card"
-                    style={{ animationDelay: `${idx * 0.06}s` }}
                     onClick={() => history.push(`/subjects/${subject.id}/evaluations`)}
+                    className="bg-slate-800/40 backdrop-blur-md border border-white/5 rounded-[20px] p-4 flex items-center gap-4 cursor-pointer hover:bg-slate-800/60 hover:border-indigo-500/30 active:scale-[0.98] transition-all animate-slide-up shadow-lg"
+                    style={{ animationDelay: `${(idx + 1) * 100}ms` }}
                   >
-                    {/* Icon */}
-                    <div className="cs-subject-icon" style={{ background: palette.bg, color: palette.color, border: `1px solid ${palette.border}` }}>
+                    {/* Avatar Iniciales */}
+                    <div className={`w-12 h-12 rounded-2xl flex items-center justify-center font-extrabold font-serif shrink-0 border shadow-sm ${palette}`}>
                       {initials}
                     </div>
 
-                    {/* Info */}
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '8px' }}>
-                        <h3 className="cs-font-display" style={{ margin: 0, fontSize: '14px', fontWeight: 700, color: '#f1f5f9', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                    {/* Información Central */}
+                    <div className="flex-1 min-w-0">
+                      <div className="flex justify-between items-start gap-2">
+                        <h3 className="m-0 text-sm font-bold text-slate-100 truncate">
                           {subject.name}
                         </h3>
-                        <span className="cs-score-pill" style={{ background: sc.bg, color: sc.color, flexShrink: 0 }}>
+                        <span className={`px-2.5 py-0.5 rounded-lg text-xs font-bold font-mono shrink-0 ${sc.pill}`}>
                           {avg ? avg.toFixed(1) : '—'}
                         </span>
                       </div>
-                      <p className="cs-font-body" style={{ margin: '3px 0 0', fontSize: '11px', color: 'rgba(148,163,184,0.4)' }}>
-                        Meta: <span style={{ color: 'rgba(148,163,184,0.65)', fontWeight: 600 }}>{target.toFixed(1)}</span>
+                      <p className="m-0 mt-1 text-[11px] text-slate-400 font-medium">
+                        Meta: <span className="text-slate-300 font-bold">{target.toFixed(1)}</span>
                       </p>
-                      <div className="cs-progress-track">
-                        <div className="cs-progress-fill" style={{ width: `${pct * 100}%`, background: sc.color }} />
+                      
+                      {/* Barra de Progreso */}
+                      <div className="h-1.5 w-full bg-slate-700/50 rounded-full mt-2 overflow-hidden">
+                        <div 
+                          className={`h-full rounded-full transition-all duration-700 ease-out ${sc.fill}`} 
+                          style={{ width: `${pct * 100}%` }} 
+                        />
                       </div>
                     </div>
 
-                    {/* Actions */}
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                      <div style={{ display: 'flex', gap: '6px' }}>
-                        {/* Botón de Proyección */}
+                    {/* Botones de Acción (Soft UI) */}
+                    <div className="flex flex-col gap-2 shrink-0">
+                      <div className="flex gap-2">
                         <button
-                          className="cs-icon-btn"
-                          style={{ background: 'rgba(168,85,247,0.1)', color: '#c084fc' }}
                           onClick={(e) => { e.stopPropagation(); openProjector(subject); }}
-                          aria-label="Proyectar nota"
+                          className="w-8 h-8 rounded-xl bg-purple-500/10 text-purple-400 flex items-center justify-center hover:bg-purple-500/20 active:scale-95 transition-all"
                         >
-                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.3" strokeLinecap="round" strokeLinejoin="round">
-                            <circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/>
-                          </svg>
+                          <LuCalculator className="text-sm" />
                         </button>
-                        {/* Botón de Edición */}
                         <button
-                          className="cs-icon-btn"
-                          style={{ background: 'rgba(99,102,241,0.1)', color: '#818cf8' }}
                           onClick={(e) => { e.stopPropagation(); openModal(subject); }}
-                          aria-label="Editar materia"
+                          className="w-8 h-8 rounded-xl bg-indigo-500/10 text-indigo-400 flex items-center justify-center hover:bg-indigo-500/20 active:scale-95 transition-all"
                         >
-                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.3" strokeLinecap="round" strokeLinejoin="round">
-                            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
-                            <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
-                          </svg>
+                          <LuPen className="text-sm" />
                         </button>
                       </div>
-                      
-                      {/* Botón de Eliminación (Centrado Abajo) */}
                       <button
-                        className="cs-icon-btn"
-                        style={{ background: 'rgba(248,113,113,0.08)', color: 'rgba(248,113,113,0.65)', width: '100%' }}
                         onClick={(e) => { e.stopPropagation(); setDelTarget(subject); }}
-                        aria-label="Eliminar materia"
+                        className="w-full h-8 rounded-xl bg-red-500/10 text-red-400 flex items-center justify-center hover:bg-red-500/20 active:scale-95 transition-all"
                       >
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.3" strokeLinecap="round" strokeLinejoin="round">
-                          <polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/>
-                          <path d="M10 11v6"/><path d="M14 11v6"/>
-                        </svg>
+                        <LuTrash2 className="text-sm" />
                       </button>
                     </div>
-
-                    {/* Chevron */}
-                    <svg style={{ color: 'rgba(99,102,241,0.35)', flexShrink: 0, marginLeft: '-4px' }} width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.3" strokeLinecap="round">
-                      <polyline points="9 18 15 12 9 6"/>
-                    </svg>
                   </div>
                 );
               })
@@ -509,125 +280,46 @@ const Subjects: React.FC = () => {
           </div>
         </div>
 
-        {/* ── Projector Sheet (NUEVO) ── */}
-        {showProjector && projSubject && (
-          <div
-            style={{ position: 'fixed', inset: 0, zIndex: 55, background: 'rgba(2,8,23,0.82)', backdropFilter: 'blur(10px)', display: 'flex', alignItems: 'flex-end', justifyContent: 'center' }}
-            onClick={(e) => { if (e.target === e.currentTarget) setShowProjector(false); }}
-          >
-            <div className="cs-glass cs-sheet" style={{ width: '100%', maxWidth: '500px', borderRadius: '28px 28px 0 0', padding: '12px 28px 48px', borderBottom: 'none' }}>
-              <div style={{ width: '36px', height: '4px', borderRadius: '2px', background: 'rgba(168,85,247,0.25)', margin: '8px auto 28px' }} />
-
-              <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '6px' }}>
-                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#c084fc" strokeWidth="2.5" strokeLinecap="round">
-                  <circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/>
-                </svg>
-                <h2 className="cs-font-display" style={{ margin: 0, fontSize: '22px', fontWeight: 800, color: '#f1f5f9' }}>
-                  Simulador de Notas
-                </h2>
-              </div>
-              <p className="cs-font-body" style={{ margin: '0 0 22px', fontSize: '13px', color: 'rgba(148,163,184,0.55)', lineHeight: 1.65 }}>
-                Descubre cuánto necesitas sacar en lo que queda de <strong style={{ color: '#cbd5e1' }}>{projSubject.name}</strong> para alcanzar tu meta.
-              </p>
-
-              {/* Resultado Hero */}
-              <div style={{ 
-                background: requiredScore === null ? 'rgba(30,41,59,0.5)' : requiredScore > 5.0 ? 'rgba(239,68,68,0.1)' : requiredScore < 0 ? 'rgba(16,185,129,0.1)' : 'rgba(168,85,247,0.1)',
-                border: `1px solid ${requiredScore === null ? 'transparent' : requiredScore > 5.0 ? 'rgba(239,68,68,0.2)' : requiredScore < 0 ? 'rgba(16,185,129,0.2)' : 'rgba(168,85,247,0.2)'}`,
-                borderRadius: '20px', padding: '24px', textAlign: 'center', marginBottom: '24px', transition: 'all 0.3s'
-              }}>
-                {requiredScore === null ? (
-                  <span className="cs-font-display" style={{ fontSize: '16px', fontWeight: 600, color: 'rgba(148,163,184,0.6)' }}>Ingresa los datos para calcular...</span>
-                ) : requiredScore > 5.0 ? (
-                  <>
-                    <span className="cs-font-display" style={{ display: 'block', fontSize: '28px', fontWeight: 800, color: '#ef4444', marginBottom: '4px' }}>Imposible 💀</span>
-                    <span className="cs-font-body" style={{ fontSize: '12px', color: 'rgba(239,68,68,0.7)', fontWeight: 500 }}>Necesitarías un {requiredScore.toFixed(2)}, lo cual supera el 5.0 máximo.</span>
-                  </>
-                ) : requiredScore <= 0 ? (
-                  <>
-                    <span className="cs-font-display" style={{ display: 'block', fontSize: '28px', fontWeight: 800, color: '#10b981', marginBottom: '4px' }}>¡Meta Superada! 🎉</span>
-                    <span className="cs-font-body" style={{ fontSize: '12px', color: 'rgba(16,185,129,0.7)', fontWeight: 500 }}>Ya tienes los puntos necesarios para esta nota.</span>
-                  </>
-                ) : (
-                  <>
-                    <span className="cs-font-body" style={{ display: 'block', fontSize: '12px', color: '#c084fc', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '8px' }}>Necesitas sacar al menos</span>
-                    <span className="cs-font-display" style={{ fontSize: '48px', fontWeight: 800, color: '#f1f5f9', lineHeight: 1 }}>{requiredScore.toFixed(1)}</span>
-                  </>
-                )}
-              </div>
-
-              {/* Inputs */}
-              <div style={{ display: 'flex', gap: '12px', marginBottom: '20px' }}>
-                <div style={{ flex: 1 }}>
-                  <label className="cs-label">Nota Acumulada</label>
-                  <input
-                    className="cs-input" type="number" step="0.1" min="0" max="5" placeholder="Ej: 1.5"
-                    value={projAccumulated} onChange={(e) => setProjAccumulated(e.target.value === '' ? '' : Number(e.target.value))}
-                  />
-                </div>
-                <div style={{ flex: 1 }}>
-                  <label className="cs-label">Porcentaje Restante</label>
-                  <input
-                    className="cs-input" type="number" step="1" min="1" max="100" placeholder="Ej: 40"
-                    value={projPendingWeight} onChange={(e) => setProjPendingWeight(e.target.value === '' ? '' : Number(e.target.value))}
-                  />
-                </div>
-              </div>
-
-              <div style={{ marginBottom: '32px' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: '8px' }}>
-                  <label className="cs-label" style={{ margin: 0 }}>¿Qué nota final deseas?</label>
-                  <span className="cs-font-display" style={{ fontSize: '18px', fontWeight: 800, color: '#a855f7' }}>{projTarget.toFixed(1)}</span>
-                </div>
-                <input 
-                  type="range" min="3.0" max="5.0" step="0.1" 
-                  value={projTarget} onChange={(e) => setProjTarget(Number(e.target.value))}
-                  className="cs-range"
-                />
-              </div>
-
-              <button className="cs-btn-cancel" style={{ width: '100%', background: 'rgba(30,41,59,0.5)' }} onClick={() => setShowProjector(false)}>Cerrar Simulador</button>
-            </div>
-          </div>
-        )}
-
-        {/* ── Add / Edit Sheet ── */}
+        {/* ── Modal Agregar / Editar Materia (Glass Sheet) ── */}
         {showModal && (
           <div
-            style={{ position: 'fixed', inset: 0, zIndex: 50, background: 'rgba(2,8,23,0.82)', backdropFilter: 'blur(10px)', display: 'flex', alignItems: 'flex-end', justifyContent: 'center' }}
+            className="fixed inset-0 z-50 bg-[#020817]/80 backdrop-blur-sm flex items-end justify-center animate-fade-in"
             onClick={(e) => { if (e.target === e.currentTarget) setShowModal(false); }}
           >
-            <div className="cs-glass cs-sheet" style={{ width: '100%', maxWidth: '500px', borderRadius: '28px 28px 0 0', padding: '12px 28px 48px', borderBottom: 'none' }}>
-              <div style={{ width: '36px', height: '4px', borderRadius: '2px', background: 'rgba(99,102,241,0.25)', margin: '8px auto 28px' }} />
-
-              <h2 className="cs-font-display" style={{ margin: '0 0 6px', fontSize: '22px', fontWeight: 800, color: '#f1f5f9' }}>
+            <div className="cs-glass-sheet w-full max-w-125 animate-sheet-up">
+              <div className="w-10 h-1.5 rounded-full bg-indigo-500/20 mx-auto mb-6" />
+              
+              <h2 className="m-0 text-2xl font-extrabold text-slate-50 tracking-tight font-serif mb-1">
                 {editingSubject ? 'Editar Materia' : 'Nueva Materia'}
               </h2>
-              <p className="cs-font-body" style={{ margin: '0 0 22px', fontSize: '13px', color: 'rgba(148,163,184,0.55)', lineHeight: 1.65 }}>
+              <p className="text-[13px] text-slate-400 leading-relaxed mb-6 font-medium">
                 Define el nombre y la nota que esperas obtener.
               </p>
 
-              <form onSubmit={handleSave}>
-                <div style={{ marginBottom: '16px' }}>
-                  <label className="cs-label">Nombre</label>
+              <form onSubmit={handleSave} className="space-y-4">
+                <div>
+                  <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5 ml-1">Nombre</label>
                   <input
-                    className="cs-input" autoFocus required
+                    className="cs-soft-input"
+                    autoFocus required
                     placeholder="Ej: Cálculo Integral"
                     value={name} onChange={(e) => setName(e.target.value)}
                   />
                 </div>
-                <div style={{ marginBottom: '22px' }}>
-                  <label className="cs-label">Nota Meta (0.0 – 5.0)</label>
+                <div>
+                  <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5 ml-1">Nota Meta (0.0 - 5.0)</label>
                   <input
-                    className="cs-input"
+                    className="cs-soft-input"
                     type="number" required step="0.1" min="0" max="5"
-                    placeholder="4.5"
+                    placeholder="Ej: 4.5"
                     value={targetScore}
                     onChange={(e) => setTargetScore(e.target.value ? Number(e.target.value) : '')}
                   />
                 </div>
-                <div style={{ display: 'flex', gap: '10px' }}>
-                  <button type="button" className="cs-btn-cancel" onClick={() => setShowModal(false)}>Cancelar</button>
+                <div className="flex gap-3 pt-2">
+                  <button type="button" onClick={() => setShowModal(false)} className="flex-1 h-13 rounded-2xl font-bold text-slate-400 bg-slate-800/50 hover:bg-slate-800/80 transition-colors">
+                    Cancelar
+                  </button>
                   <button type="submit" className="cs-btn-primary">
                     {editingSubject ? 'Guardar cambios' : 'Crear materia'}
                   </button>
@@ -637,13 +329,96 @@ const Subjects: React.FC = () => {
           </div>
         )}
 
-        {/* ── Delete confirm ── */}
+        {/* ── Simulador de Notas (Proyector) ── */}
+        {showProjector && projSubject && (
+          <div
+            className="fixed inset-0 z-50 bg-[#020817]/80 backdrop-blur-sm flex items-end justify-center animate-fade-in"
+            onClick={(e) => { if (e.target === e.currentTarget) setShowProjector(false); }}
+          >
+            <div className="cs-glass-sheet w-full max-w-125 animate-sheet-up">
+              <div className="w-10 h-1.5 rounded-full bg-purple-500/20 mx-auto mb-5" />
+
+              <div className="flex items-center gap-3 mb-2">
+                <LuCalculator className="text-2xl text-purple-400" />
+                <h2 className="m-0 text-2xl font-extrabold text-slate-50 tracking-tight font-serif">
+                  Simulador de Notas
+                </h2>
+              </div>
+              <p className="text-[13px] text-slate-400 leading-relaxed mb-6 font-medium">
+                Calcula cuánto necesitas en <strong className="text-slate-200">{projSubject.name}</strong> para alcanzar tu meta.
+              </p>
+
+              {/* Resultado Neumórfico Dinámico */}
+              <div className={`p-6 rounded-3xl text-center mb-6 transition-all duration-300 border shadow-inner ${
+                requiredScore === null 
+                  ? 'bg-slate-800/40 border-slate-700/50' 
+                  : requiredScore > 5.0 
+                    ? 'bg-red-500/10 border-red-500/20' 
+                    : requiredScore < 0 
+                      ? 'bg-emerald-500/10 border-emerald-500/20' 
+                      : 'bg-purple-500/10 border-purple-500/20'
+              }`}>
+                {requiredScore === null ? (
+                  <span className="text-sm font-bold text-slate-400">Ingresa los datos para calcular...</span>
+                ) : requiredScore > 5.0 ? (
+                  <>
+                    <span className="block text-3xl font-black text-red-400 mb-1 font-serif">Imposible 💀</span>
+                    <span className="text-xs text-red-400/80 font-medium">Necesitarías un {requiredScore.toFixed(2)}, lo cual supera el 5.0 máximo.</span>
+                  </>
+                ) : requiredScore <= 0 ? (
+                  <>
+                    <span className="block text-3xl font-black text-emerald-400 mb-1 font-serif">¡Meta Superada! 🎉</span>
+                    <span className="text-xs text-emerald-400/80 font-medium">Ya tienes los puntos necesarios para esta nota.</span>
+                  </>
+                ) : (
+                  <>
+                    <span className="block text-xs text-purple-400 font-bold uppercase tracking-widest mb-2">Necesitas sacar al menos</span>
+                    <span className="text-5xl font-black text-slate-50 leading-none font-serif">{requiredScore.toFixed(1)}</span>
+                  </>
+                )}
+              </div>
+
+              {/* Inputs de Simulación */}
+              <div className="flex gap-3 mb-6">
+                <div className="flex-1">
+                  <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5 ml-1">Nota Acumulada</label>
+                  <input
+                    className="cs-soft-input font-mono! font-bold!" type="number" step="0.1" min="0" max="5" placeholder="Ej: 1.5"
+                    value={projAccumulated} onChange={(e) => setProjAccumulated(e.target.value === '' ? '' : Number(e.target.value))}
+                  />
+                </div>
+                <div className="flex-1">
+                  <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5 ml-1">% Restante</label>
+                  <input
+                    className="cs-soft-input font-mono! font-bold!" type="number" step="1" min="1" max="100" placeholder="Ej: 40"
+                    value={projPendingWeight} onChange={(e) => setProjPendingWeight(e.target.value === '' ? '' : Number(e.target.value))}
+                  />
+                </div>
+              </div>
+
+              {/* Slider Meta */}
+              <div className="mb-8">
+                <div className="flex justify-between items-end mb-2">
+                  <label className="text-[11px] font-bold text-slate-400 uppercase tracking-widest ml-1">¿Qué nota final deseas?</label>
+                  <span className="text-lg font-black text-purple-400 font-serif">{projTarget.toFixed(1)}</span>
+                </div>
+                <input 
+                  type="range" min="3.0" max="5.0" step="0.1" 
+                  value={projTarget} onChange={(e) => setProjTarget(Number(e.target.value))}
+                  className="w-full h-2 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-purple-500"
+                />
+              </div>
+
+              <button onClick={() => setShowProjector(false)} className="w-full h-14 rounded-2xl font-bold text-slate-300 bg-slate-800/60 hover:bg-slate-800 transition-colors">
+                Cerrar Simulador
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* ── Confirm Delete ── */}
         {delTarget && (
-          <ConfirmDelete
-            name={delTarget.name}
-            onConfirm={confirmDelete}
-            onCancel={() => setDelTarget(null)}
-          />
+          <ConfirmDelete name={delTarget.name} onConfirm={confirmDelete} onCancel={() => setDelTarget(null)} />
         )}
       </IonContent>
     </IonPage>

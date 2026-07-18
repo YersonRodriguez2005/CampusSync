@@ -8,172 +8,29 @@ import {
 } from "@ionic/react";
 import { useHistory } from "react-router-dom";
 import { AreaChart, Area, XAxis, Tooltip, ResponsiveContainer } from "recharts";
+import { 
+  LuLogOut, 
+  LuBookOpen, 
+  LuCalendarDays, 
+  LuClock, 
+  LuBellRing, 
+  LuLayers
+} from "react-icons/lu";
 import { useAuthStore } from "../store/authStore";
 import { pushService } from "../services/pushService";
-import {
-  dashboardService,
-  DashboardSummary,
-} from "../services/dashboardService";
+import { dashboardService, DashboardSummary } from "../services/dashboardService";
 import toast from "react-hot-toast";
 
-// ─── CSS ──────────────────────────────────────────────────────────────────────
-const CSS = `
-  @keyframes cs-fadeUp {
-    from { opacity: 0; transform: translateY(16px); }
-    to   { opacity: 1; transform: translateY(0); }
-  }
-  @keyframes cs-floatA {
-    0%,100% { transform: translate(0,0) scale(1); }
-    50%      { transform: translate(20px,-30px) scale(1.05); }
-  }
-  @keyframes cs-floatB {
-    0%,100% { transform: translate(0,0) scale(1); }
-    50%      { transform: translate(-16px,22px) scale(0.96); }
-  }
-  @keyframes cs-spinRing {
-    from { transform: rotate(0deg); }
-    to   { transform: rotate(360deg); }
-  }
-  @keyframes cs-chartReveal {
-    from { opacity: 0; }
-    to   { opacity: 1; }
-  }
-  @keyframes cs-shimmer {
-    0%   { background-position: -400px 0; }
-    100% { background-position:  400px 0; }
-  }
-
-  .cs-font-display { font-family: 'Sora', system-ui, sans-serif; }
-  .cs-font-body    { font-family: 'DM Sans', system-ui, sans-serif; }
-
-  .cs-glass {
-    background: rgba(15,23,42,0.72);
-    backdrop-filter: blur(28px);
-    -webkit-backdrop-filter: blur(28px);
-    border: 1px solid rgba(99,102,241,0.18);
-    box-shadow: 0 20px 48px rgba(0,0,0,0.45), inset 0 1px 0 rgba(255,255,255,0.06);
-  }
-
-  .cs-stat-card {
-    background: rgba(30,41,59,0.6);
-    border: 1px solid rgba(99,102,241,0.15);
-    border-radius: 22px;
-    padding: 20px 18px;
-    flex: 1;
-  }
-
-  .cs-nav-btn {
-    flex: 1; display: flex; flex-direction: column; align-items: center;
-    gap: 10px; padding: 20px 10px;
-    background: rgba(30,41,59,0.55);
-    border: 1px solid rgba(99,102,241,0.12);
-    border-radius: 20px;
-    cursor: pointer;
-    transition: transform 0.18s ease, border-color 0.18s ease, background 0.18s ease;
-  }
-  .cs-nav-btn:active  { transform: scale(0.96); }
-  .cs-nav-btn:hover   { background: rgba(30,41,59,0.85); border-color: rgba(99,102,241,0.28); }
-
-  .cs-nav-icon {
-    width: 46px; height: 46px; border-radius: 16px;
-    display: flex; align-items: center; justify-content: center;
-  }
-
-  .cs-orb-a {
-    position: absolute; top: -80px; right: -60px;
-    width: 280px; height: 280px; border-radius: 50%;
-    background: radial-gradient(circle, rgba(99,102,241,0.32) 0%, transparent 68%);
-    animation: cs-floatA 9s ease-in-out infinite; pointer-events: none;
-  }
-  .cs-orb-b {
-    position: absolute; bottom: -60px; left: -60px;
-    width: 220px; height: 220px; border-radius: 50%;
-    background: radial-gradient(circle, rgba(34,211,238,0.18) 0%, transparent 68%);
-    animation: cs-floatB 11s ease-in-out infinite; pointer-events: none;
-  }
-
-  .cs-spin-ring {
-    position: absolute; inset: -7px; border-radius: 50%;
-    border: 2px solid transparent;
-    border-top-color: #6366f1;
-    border-right-color: rgba(139,92,246,0.3);
-    animation: cs-spinRing 5s linear infinite; pointer-events: none;
-  }
-
-  .cs-skeleton {
-    border-radius: 20px; overflow: hidden;
-    background: rgba(30,41,59,0.6);
-    position: relative;
-  }
-  .cs-skeleton::after {
-    content: ''; position: absolute; inset: 0;
-    background: linear-gradient(90deg, transparent 0%, rgba(99,102,241,0.07) 50%, transparent 100%);
-    background-size: 400px 100%;
-    animation: cs-shimmer 1.6s ease-in-out infinite;
-  }
-
-  .cs-logout-btn {
-    width: 40px; height: 40px; border-radius: 14px;
-    background: rgba(99,102,241,0.15); border: 1px solid rgba(99,102,241,0.2);
-    display: flex; align-items: center; justify-content: center;
-    cursor: pointer; transition: background 0.18s ease;
-    color: rgba(165,180,252,0.85); outline: none;
-  }
-  .cs-logout-btn:active { background: rgba(99,102,241,0.28); }
-
-  .cs-section-label {
-    font-family: 'DM Sans', system-ui, sans-serif;
-    font-size: 10px; font-weight: 700;
-    letter-spacing: 0.1em; text-transform: uppercase;
-    color: rgba(148,163,184,0.4);
-    margin-bottom: 12px; display: block;
-  }
-
-  .cs-a0 { animation: cs-fadeUp 0.55s cubic-bezier(.22,1,.36,1) both; }
-  .cs-a1 { animation: cs-fadeUp 0.55s cubic-bezier(.22,1,.36,1) 0.09s both; }
-  .cs-a2 { animation: cs-fadeUp 0.55s cubic-bezier(.22,1,.36,1) 0.18s both; }
-  .cs-a3 { animation: cs-fadeUp 0.55s cubic-bezier(.22,1,.36,1) 0.27s both; }
-  .cs-a4 { animation: cs-fadeUp 0.55s cubic-bezier(.22,1,.36,1) 0.36s both; }
-
-  .cs-chart-reveal { animation: cs-chartReveal 0.8s ease both; }
-`;
-
-// ─── Custom Tooltip ───────────────────────────────────────────────────────────
+// ─── Custom Tooltip para Recharts (Glassmorphism) ─────────────────────────────
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const CustomTooltip = ({ active, payload, label }: any) => {
   if (!active || !payload?.length) return null;
   return (
-    <div
-      style={{
-        background: "rgba(15,23,42,0.95)",
-        border: "1px solid rgba(99,102,241,0.2)",
-        borderRadius: "12px",
-        padding: "10px 14px",
-        fontFamily: "'DM Sans', sans-serif",
-      }}
-    >
-      <p
-        style={{
-          margin: 0,
-          fontSize: "11px",
-          color: "rgba(148,163,184,0.55)",
-          fontWeight: 600,
-          letterSpacing: "0.05em",
-          textTransform: "uppercase",
-        }}
-      >
+    <div className="bg-slate-900/95 backdrop-blur-md border border-indigo-500/20 rounded-xl px-4 py-3 shadow-xl">
+      <p className="m-0 text-[10px] text-slate-400 font-bold tracking-widest uppercase mb-1">
         {label}
       </p>
-      <p
-        style={{
-          margin: "4px 0 0",
-          fontSize: "20px",
-          fontWeight: 700,
-          color: "#818cf8",
-          fontFamily: "'Sora', sans-serif",
-          lineHeight: 1,
-        }}
-      >
+      <p className="m-0 text-xl font-extrabold text-indigo-400 font-serif leading-none">
         {Number(payload[0].value).toFixed(1)}
       </p>
     </div>
@@ -182,13 +39,13 @@ const CustomTooltip = ({ active, payload, label }: any) => {
 
 // ─── Skeleton ─────────────────────────────────────────────────────────────────
 const SkeletonDash: React.FC = () => (
-  <div style={{ display: "flex", flexDirection: "column", gap: "14px" }}>
-    <div style={{ display: "flex", gap: "12px" }}>
-      <div className="cs-skeleton" style={{ height: "120px", flex: 1 }} />
-      <div className="cs-skeleton" style={{ height: "120px", flex: 1 }} />
+  <div className="flex flex-col gap-4 animate-pulse">
+    <div className="flex gap-3">
+      <div className="h-30 flex-1 rounded-3xl bg-slate-800/50 border border-white/5" />
+      <div className="h-30 flex-1 rounded-3xl bg-slate-800/50 border border-white/5" />
     </div>
-    <div className="cs-skeleton" style={{ height: "210px" }} />
-    <div className="cs-skeleton" style={{ height: "90px" }} />
+    <div className="h-52.5 rounded-[28px] bg-slate-800/50 border border-white/5" />
+    <div className="h-22.5 rounded-2xl bg-slate-800/50 border border-white/5" />
   </div>
 );
 
@@ -201,7 +58,9 @@ const NotificationBanner: React.FC = () => {
       const success = await pushService.subscribeUser();
       if (success) {
         setIsSubscribed(true);
-        toast.success("Notificaciones activadas");
+        toast.success("Notificaciones activadas", {
+          style: { background: '#0f172a', color: '#fff', border: '1px solid #10b981' }
+        });
       }
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     } catch (err) {
@@ -210,80 +69,25 @@ const NotificationBanner: React.FC = () => {
   };
 
   return (
-    <div
-      className="cs-glass"
-      style={{
-        marginTop: "20px",
-        padding: "16px 20px",
-        borderRadius: "20px",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "space-between",
-        borderLeft: "4px solid #818cf8",
-        gap: "12px",
-      }}
-    >
-      <div style={{ display: "flex", alignItems: "center", gap: "14px", flex: 1 }}>
-        <div
-          style={{
-            background: "rgba(99,102,241,0.15)",
-            margin: 0,
-            flexShrink: 0,
-            width: "40px",
-            height: "40px",
-            borderRadius: "12px",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-          }}
-        >
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#818cf8" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
-            <path d="M13.73 21a2 2 0 0 1-3.46 0" />
-          </svg>
+    <div className="cs-glass-card p-4! flex items-center justify-between border-l-4 border-l-indigo-500 mt-5">
+      <div className="flex items-center gap-3.5 flex-1">
+        <div className="w-10 h-10 rounded-xl bg-indigo-500/15 flex items-center justify-center shrink-0 border border-indigo-500/20">
+          <LuBellRing className={`text-indigo-400 text-lg ${!isSubscribed && 'animate-pulse'}`} />
         </div>
-
-        <div style={{ textAlign: "left", display: "flex", flexDirection: "column" }}>
-          <span
-            className="cs-font-display"
-            style={{ fontSize: "14px", fontWeight: 700, color: "#cbd5e1" }}
-          >
-            Alertas de Tareas
-          </span>
-          <span
-            className="cs-font-body"
-            style={{
-              fontSize: "11px",
-              color: "rgba(148,163,184,0.5)",
-              fontWeight: 500,
-              marginTop: "2px",
-            }}
-          >
-            Avisos antes de tus entregas
-          </span>
+        <div className="flex flex-col text-left">
+          <span className="text-sm font-bold text-slate-200">Alertas de Tareas</span>
+          <span className="text-[11px] text-slate-400 font-medium mt-0.5">Avisos antes de tus entregas</span>
         </div>
       </div>
 
       <button
         onClick={handleEnableNotifications}
         disabled={isSubscribed}
-        style={{
-          padding: "8px 16px",
-          borderRadius: "12px",
-          border: "none",
-          background: isSubscribed ? "rgba(148,163,184,0.1)" : "linear-gradient(135deg, #6366f1, #8b5cf6)",
-          color: isSubscribed ? "rgba(148,163,184,0.5)" : "#ffffff",
-          boxShadow: isSubscribed ? "none" : "0 4px 14px rgba(99,102,241,0.3)",
-          fontFamily: "'Sora', sans-serif",
-          fontSize: "11px",
-          fontWeight: 700,
-          cursor: isSubscribed ? "default" : "pointer",
-          transition: "all 0.2s cubic-bezier(.22,1,.36,1)",
-          flexShrink: 0,
-        }}
-        onMouseDown={(e) => !isSubscribed && (e.currentTarget.style.transform = "scale(0.95)")}
-        onMouseUp={(e) => !isSubscribed && (e.currentTarget.style.transform = "scale(1)")}
-        onMouseLeave={(e) => !isSubscribed && (e.currentTarget.style.transform = "scale(1)")}
+        className={`px-4 py-2 rounded-xl text-[11px] font-bold tracking-wide transition-all duration-300 shrink-0 ${
+          isSubscribed 
+            ? 'bg-slate-800/50 text-slate-500 cursor-not-allowed' 
+            : 'bg-linear-to-r from-indigo-500 to-purple-500 text-white shadow-[0_4px_15px_rgba(99,102,241,0.3)] active:scale-95'
+        }`}
       >
         {isSubscribed ? "Activado" : "Activar"}
       </button>
@@ -314,7 +118,7 @@ const Dashboard: React.FC = () => {
       setSummary(data);
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (error: any) {
-      toast.error(error);
+      toast.error(error.message || "Error al cargar datos");
     } finally {
       setLoading(false);
       setTimeout(() => setShowChart(true), 400);
@@ -322,22 +126,16 @@ const Dashboard: React.FC = () => {
   };
 
   useEffect(() => {
-  // 1. Configurar el saludo
-  const h = new Date().getHours();
-  setGreeting(
-    h < 12 ? "Buenos días" : h < 18 ? "Buenas tardes" : "Buenas noches"
-  );
-  
-  // 2. Carga inicial de datos al entrar al Dashboard
-  loadData();
+    const h = new Date().getHours();
+    setGreeting(h < 12 ? "Buenos días" : h < 18 ? "Buenas tardes" : "Buenas noches");
+    
+    loadData();
+    window.addEventListener('grades-updated', loadData);
 
-  // 3. Escuchar el evento que configuramos en la otra vista
-  window.addEventListener('grades-updated', loadData);
-
-  return () => {
-    window.removeEventListener('grades-updated', loadData);
-  };
-}, []);
+    return () => {
+      window.removeEventListener('grades-updated', loadData);
+    };
+  }, []);
 
   const doRefresh = async (event: CustomEvent) => {
     setShowChart(false);
@@ -348,487 +146,167 @@ const Dashboard: React.FC = () => {
 
   const username = user?.email ? user.email.split("@")[0] : "Estudiante";
   const avg = Number(summary.global_average);
-  const avgColor =
-    avg >= 4.0
-      ? "#34d399"
-      : avg >= 3.0
-        ? "#818cf8"
-        : avg > 0
-          ? "#fb923c"
-          : "#64748b";
+  
+  // Lógica de colores según el promedio
+  const avgColor = avg >= 4.0 ? "#34d399" : avg >= 3.0 ? "#818cf8" : avg > 0 ? "#fb923c" : "#64748b";
   const ringPct = Math.min(avg / 5, 1);
-  const CIRC = 2 * Math.PI * 26; // r=26
+  const CIRC = 2 * Math.PI * 26; // Radio del SVG = 26
 
   return (
     <IonPage>
-      <style>{CSS}</style>
+      <IonContent style={{ "--background": "transparent" } as React.CSSProperties} scrollY>
+        
+        <div className="min-h-full bg-linear-to-br from-[#020817] via-[#0f172a] to-[#080d1a] relative overflow-hidden pb-10">
+          
+          <IonRefresher slot="fixed" onIonRefresh={doRefresh}>
+            <IonRefresherContent />
+          </IonRefresher>
 
-      <IonContent
-        style={{ "--background": "transparent" } as React.CSSProperties}
-        scrollY
-      >
-        <IonRefresher slot="fixed" onIonRefresh={doRefresh}>
-          <IonRefresherContent />
-        </IonRefresher>
+          {/* ── Orbes Ambientales y Malla (GPU Accelerated) ── */}
+          <div className="absolute -top-20 -right-16 w-70 h-70 rounded-full bg-[radial-gradient(circle,rgba(99,102,241,0.25)_0%,transparent_70%)] animate-float-orb-a pointer-events-none" />
+          <div className="absolute top-[20%] -left-16 w-55 h-55 rounded-full bg-[radial-gradient(circle,rgba(34,211,238,0.15)_0%,transparent_70%)] animate-float-orb-b pointer-events-none" />
+          <div className="absolute inset-0 pointer-events-none bg-[radial-gradient(rgba(99,102,241,0.08)_1px,transparent_1px)] bg-size-[28px_28px] z-0" />
 
-        <div
-          style={{
-            minHeight: "100%",
-            background:
-              "linear-gradient(160deg, #020817 0%, #0f172a 55%, #080d1a 100%)",
-            position: "relative",
-            paddingBottom: "40px",
-          }}
-        >
-          {/* Dot grid */}
-          <div
-            style={{
-              position: "fixed",
-              inset: 0,
-              pointerEvents: "none",
-              zIndex: 0,
-              backgroundImage:
-                "radial-gradient(rgba(99,102,241,0.1) 1px, transparent 1px)",
-              backgroundSize: "28px 28px",
-            }}
-          />
-
-          {/* ── Hero ── */}
-          <div
-            style={{
-              position: "relative",
-              padding: "52px 20px 96px",
-              overflow: "hidden",
-              zIndex: 1,
-            }}
-          >
-            <div className="cs-orb-a" />
-            <div className="cs-orb-b" />
-
+          {/* ── Hero Section ── */}
+          <div className="relative z-10 pt-14 px-6 pb-24">
+            
             {/* Top bar */}
-            <div
-              className="cs-a0"
-              style={{
-                display: "flex",
-                justifyContent: "space-between",
-                alignItems: "center",
-                position: "relative",
-                zIndex: 2,
-              }}
-            >
-              <div
-                style={{ display: "flex", alignItems: "center", gap: "14px" }}
-              >
+            <div className="flex justify-between items-center animate-slide-up" style={{ animationDelay: '0ms' }}>
+              <div className="flex items-center gap-3.5">
                 {/* Avatar */}
-                <div
-                  style={{
-                    position: "relative",
-                    width: "50px",
-                    height: "50px",
-                  }}
-                >
-                  <div className="cs-spin-ring" />
-                  <div
-                    style={{
-                      width: "50px",
-                      height: "50px",
-                      borderRadius: "16px",
-                      background: "linear-gradient(135deg,#6366f1,#8b5cf6)",
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      boxShadow: "0 4px 20px rgba(99,102,241,0.4)",
-                    }}
-                  >
-                    <span
-                      className="cs-font-display"
-                      style={{
-                        color: "#fff",
-                        fontSize: "18px",
-                        fontWeight: 800,
-                      }}
-                    >
+                <div className="relative w-12 h-12 flex items-center justify-center">
+                  <div className="absolute -inset-1.5 rounded-full border-2 border-transparent border-t-indigo-500 border-r-purple-500/40 animate-spin-slow pointer-events-none" />
+                  <div className="w-12 h-12 rounded-[14px] bg-linear-to-br from-indigo-500 to-purple-600 flex items-center justify-center shadow-[0_4px_20px_rgba(99,102,241,0.4)]">
+                    <span className="text-white text-lg font-extrabold font-serif">
                       {username.charAt(0).toUpperCase()}
                     </span>
                   </div>
                 </div>
                 <div>
-                  <p
-                    className="cs-font-body"
-                    style={{
-                      margin: 0,
-                      fontSize: "12px",
-                      color: "rgba(148,163,184,0.5)",
-                      fontWeight: 500,
-                    }}
-                  >
-                    {greeting},
-                  </p>
-                  <h2
-                    className="cs-font-display"
-                    style={{
-                      margin: 0,
-                      fontSize: "19px",
-                      fontWeight: 700,
-                      color: "#f1f5f9",
-                      maxWidth: "180px",
-                      overflow: "hidden",
-                      textOverflow: "ellipsis",
-                      whiteSpace: "nowrap",
-                    }}
-                  >
+                  <p className="m-0 text-xs text-slate-400 font-medium">{greeting},</p>
+                  <h2 className="m-0 text-xl font-bold text-slate-50 max-w-45 truncate">
                     {username}
                   </h2>
                 </div>
               </div>
+
+              {/* Botón Logout */}
               <button
-                className="cs-logout-btn"
-                onClick={() => {
-                  logout();
-                  history.push("/login");
-                }}
+                onClick={() => { logout(); history.push("/login"); }}
                 aria-label="Cerrar sesión"
+                className="w-10 h-10 rounded-xl bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center text-indigo-400 active:scale-95 hover:bg-indigo-500/20 transition-all shadow-sm"
               >
-                <svg
-                  width="18"
-                  height="18"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2.2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                >
-                  <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
-                  <polyline points="16 17 21 12 16 7" />
-                  <line x1="21" y1="12" x2="9" y2="12" />
-                </svg>
+                <LuLogOut className="text-lg" />
               </button>
             </div>
 
-            {/* Tagline */}
-            <div
-              className="cs-a1"
-              style={{ marginTop: "24px", position: "relative", zIndex: 2 }}
-            >
-              <p
-                className="cs-font-display"
-                style={{
-                  margin: 0,
-                  fontSize: "26px",
-                  fontWeight: 800,
-                  color: "#f8fafc",
-                  letterSpacing: "-0.02em",
-                  lineHeight: 1.2,
-                }}
-              >
-                Tu rendimiento,
-                <br />
-                <span style={{ color: avgColor }}>
+            {/* Tagline Rendimiento */}
+            <div className="mt-8 animate-slide-up" style={{ animationDelay: '100ms' }}>
+              <p className="m-0 text-3xl font-extrabold text-slate-50 tracking-tight leading-tight font-serif">
+                Tu rendimiento,<br />
+                <span style={{ color: avgColor }} className="drop-shadow-md">
                   {avg > 0 ? `${avg.toFixed(2)} / 5.0` : "sin datos aún"}
                 </span>
               </p>
             </div>
           </div>
 
-          {/* ── Body cards (overlap hero) ── */}
-          <div
-            style={{
-              position: "relative",
-              zIndex: 2,
-              padding: "0 20px",
-              marginTop: "-68px",
-              display: "flex",
-              flexDirection: "column",
-              gap: "14px",
-            }}
-          >
+          {/* ── Body Content (Solapado sobre el Hero) ── */}
+          <div className="relative z-10 px-5 -mt-16 flex flex-col gap-4">
+            
             {loading ? (
               <SkeletonDash />
             ) : (
               <>
-                {/* Stat row */}
-                <div className="cs-a2" style={{ display: "flex", gap: "12px" }}>
-                  {/* Active subjects */}
-                  <div className="cs-stat-card">
-                    <div
-                      style={{
-                        width: "38px",
-                        height: "38px",
-                        borderRadius: "13px",
-                        background: "rgba(99,102,241,0.15)",
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        marginBottom: "12px",
-                      }}
-                    >
-                      <svg
-                        width="18"
-                        height="18"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="#818cf8"
-                        strokeWidth="2.2"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                      >
-                        <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z" />
-                        <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z" />
-                      </svg>
+                {/* ── Stats Row ── */}
+                <div className="flex gap-3 animate-slide-up" style={{ animationDelay: '200ms' }}>
+                  
+                  {/* Materias Activas */}
+                  <div className="flex-1 bg-slate-800/40 backdrop-blur-md border border-indigo-500/15 rounded-3xl p-5 shadow-lg">
+                    <div className="w-10 h-10 rounded-xl bg-indigo-500/15 flex items-center justify-center mb-3 border border-indigo-500/20">
+                      <LuBookOpen className="text-indigo-400 text-lg" />
                     </div>
-                    <p
-                      className="cs-font-body"
-                      style={{
-                        margin: "0 0 2px",
-                        fontSize: "10px",
-                        fontWeight: 700,
-                        letterSpacing: "0.08em",
-                        textTransform: "uppercase",
-                        color: "rgba(148,163,184,0.45)",
-                      }}
-                    >
+                    <p className="m-0 text-[10px] font-bold tracking-widest uppercase text-slate-400 mb-1">
                       Materias act.
                     </p>
-                    <p
-                      className="cs-font-display"
-                      style={{
-                        margin: 0,
-                        fontSize: "32px",
-                        fontWeight: 800,
-                        color: "#f1f5f9",
-                        lineHeight: 1,
-                      }}
-                    >
+                    <p className="m-0 text-[32px] font-extrabold text-slate-50 leading-none font-serif">
                       {summary.active_subjects}
                     </p>
                   </div>
 
-                  {/* Ring card */}
-                  <div
-                    className="cs-stat-card"
-                    style={{
-                      display: "flex",
-                      flexDirection: "column",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      gap: "6px",
-                    }}
-                  >
-                    <svg
-                      width="70"
-                      height="70"
-                      viewBox="0 0 64 64"
-                      style={{ overflow: "visible" }}
-                    >
+                  {/* Ring Card (Promedio Radial) */}
+                  <div className="flex-1 bg-slate-800/40 backdrop-blur-md border border-indigo-500/15 rounded-3xl p-5 shadow-lg flex flex-col items-center justify-center gap-1">
+                    <svg width="70" height="70" viewBox="0 0 64 64" className="overflow-visible">
+                      <circle cx="32" cy="32" r="26" fill="none" stroke="rgba(30,41,59,0.9)" strokeWidth="6" />
                       <circle
-                        cx="32"
-                        cy="32"
-                        r="26"
-                        fill="none"
-                        stroke="rgba(30,41,59,0.9)"
-                        strokeWidth="6"
-                      />
-                      <circle
-                        cx="32"
-                        cy="32"
-                        r="26"
-                        fill="none"
-                        stroke={avgColor}
-                        strokeWidth="6"
-                        strokeLinecap="round"
+                        cx="32" cy="32" r="26" fill="none"
+                        stroke={avgColor} strokeWidth="6" strokeLinecap="round"
                         strokeDasharray={`${ringPct * CIRC} ${CIRC}`}
                         strokeDashoffset={CIRC * 0.25}
-                        style={{ transition: "stroke-dasharray 1s ease" }}
+                        className="transition-all duration-1000 ease-out"
                       />
-                      <text
-                        x="32"
-                        y="37"
-                        textAnchor="middle"
-                        fill={avgColor}
-                        fontSize="13"
-                        fontWeight="700"
-                        fontFamily="'Sora',sans-serif"
-                      >
+                      <text x="32" y="37" textAnchor="middle" fill={avgColor} fontSize="13" fontWeight="800" fontFamily="sans-serif">
                         {avg > 0 ? avg.toFixed(1) : "—"}
                       </text>
                     </svg>
-                    <p
-                      className="cs-font-body"
-                      style={{
-                        margin: 0,
-                        fontSize: "10px",
-                        fontWeight: 700,
-                        letterSpacing: "0.08em",
-                        textTransform: "uppercase",
-                        color: "rgba(148,163,184,0.4)",
-                        textAlign: "center",
-                      }}
-                    >
+                    <p className="m-0 mt-1 text-[10px] font-bold tracking-widest uppercase text-slate-400">
                       Promedio
                     </p>
                   </div>
                 </div>
 
-                {/* Chart */}
-                <div
-                  className="cs-glass cs-a3"
-                  style={{ borderRadius: "24px", padding: "22px 20px" }}
-                >
-                  <div
-                    style={{
-                      display: "flex",
-                      justifyContent: "space-between",
-                      alignItems: "center",
-                      marginBottom: "18px",
-                    }}
-                  >
+                {/* ── Chart Card ── */}
+                <div className="cs-glass-card p-5! animate-slide-up" style={{ animationDelay: '300ms' }}>
+                  <div className="flex justify-between items-center mb-4">
                     <div>
-                      <h3
-                        className="cs-font-display"
-                        style={{
-                          margin: 0,
-                          fontSize: "15px",
-                          fontWeight: 700,
-                          color: "#f1f5f9",
-                        }}
-                      >
-                        Rendimiento histórico
-                      </h3>
-                      <p
-                        className="cs-font-body"
-                        style={{
-                          margin: "3px 0 0",
-                          fontSize: "11px",
-                          color: "rgba(148,163,184,0.4)",
-                        }}
-                      >
-                        Promedio por semestre
-                      </p>
+                      <h3 className="m-0 text-base font-extrabold text-slate-50 font-serif">Rendimiento histórico</h3>
+                      <p className="m-0 mt-1 text-[11px] text-slate-400 font-medium">Promedio por semestre</p>
                     </div>
                     {summary.chart_data.length > 0 && (
-                      <span
-                        style={{
-                          background: "rgba(99,102,241,0.1)",
-                          border: "1px solid rgba(99,102,241,0.18)",
-                          borderRadius: "20px",
-                          padding: "3px 10px",
-                          fontSize: "11px",
-                          fontWeight: 700,
-                          color: "#818cf8",
-                          fontFamily: "'DM Sans',sans-serif",
-                        }}
-                      >
+                      <span className="bg-indigo-500/10 border border-indigo-500/20 rounded-xl px-2.5 py-1 text-[11px] font-bold text-indigo-400">
                         {summary.chart_data.length} sem.
                       </span>
                     )}
                   </div>
-                  <div style={{ height: "160px" }}>
+
+                  <div className="h-40 w-full">
                     {showChart && summary.chart_data.length > 0 ? (
-                      <div
-                        className="cs-chart-reveal"
-                        style={{ height: "100%" }}
-                      >
-                        <ResponsiveContainer width="99%" height="100%">
-                          <AreaChart
-                            data={summary.chart_data}
-                            margin={{ top: 4, right: 4, left: -22, bottom: 0 }}
-                          >
+                      <div className="h-full animate-fade-in">
+                        <ResponsiveContainer width="100%" height="100%">
+                          <AreaChart data={summary.chart_data} margin={{ top: 4, right: 4, left: -22, bottom: 0 }}>
                             <defs>
-                              <linearGradient
-                                id="csGrad"
-                                x1="0"
-                                y1="0"
-                                x2="0"
-                                y2="1"
-                              >
-                                <stop
-                                  offset="0%"
-                                  stopColor="#6366f1"
-                                  stopOpacity={0.35}
-                                />
-                                <stop
-                                  offset="100%"
-                                  stopColor="#6366f1"
-                                  stopOpacity={0}
-                                />
+                              <linearGradient id="csGrad" x1="0" y1="0" x2="0" y2="1">
+                                <stop offset="0%" stopColor="#6366f1" stopOpacity={0.4} />
+                                <stop offset="100%" stopColor="#6366f1" stopOpacity={0} />
                               </linearGradient>
                             </defs>
-                            <XAxis
-                              dataKey="name"
-                              tick={{
-                                fontSize: 10,
-                                fill: "rgba(148,163,184,0.4)",
-                                fontFamily: "'DM Sans',sans-serif",
-                              }}
-                              axisLine={false}
-                              tickLine={false}
+                            <XAxis 
+                              dataKey="name" 
+                              tick={{ fontSize: 10, fill: "rgba(148,163,184,0.5)", fontWeight: 600 }} 
+                              axisLine={false} 
+                              tickLine={false} 
                             />
-                            <Tooltip
-                              content={<CustomTooltip />}
-                              cursor={{
-                                stroke: "rgba(99,102,241,0.18)",
-                                strokeWidth: 1,
-                              }}
-                            />
+                            <Tooltip content={<CustomTooltip />} cursor={{ stroke: "rgba(99,102,241,0.2)", strokeWidth: 1 }} />
                             <Area
                               type="monotone"
                               dataKey="promedio"
-                              stroke="#6366f1"
-                              strokeWidth={2.5}
+                              stroke="#8b5cf6"
+                              strokeWidth={3}
                               fill="url(#csGrad)"
-                              dot={{ fill: "#818cf8", r: 4, strokeWidth: 0 }}
-                              activeDot={{
-                                fill: "#a5b4fc",
-                                r: 5,
-                                strokeWidth: 0,
-                              }}
+                              dot={{ fill: "#0f172a", stroke: "#8b5cf6", strokeWidth: 2, r: 4 }}
+                              activeDot={{ fill: "#6366f1", stroke: "#fff", strokeWidth: 2, r: 6 }}
                             />
                           </AreaChart>
                         </ResponsiveContainer>
                       </div>
                     ) : (
-                      <div
-                        style={{
-                          height: "100%",
-                          display: "flex",
-                          flexDirection: "column",
-                          alignItems: "center",
-                          justifyContent: "center",
-                          gap: "10px",
-                        }}
-                      >
+                      <div className="h-full flex flex-col items-center justify-center gap-2 opacity-50">
                         {loading ? (
-                          <IonSpinner
-                            name="crescent"
-                            style={
-                              { "--color": "#6366f1" } as React.CSSProperties
-                            }
-                          />
+                          <IonSpinner name="crescent" className="text-indigo-500" />
                         ) : (
                           <>
-                            <svg
-                              width="32"
-                              height="32"
-                              viewBox="0 0 24 24"
-                              fill="none"
-                              stroke="rgba(99,102,241,0.3)"
-                              strokeWidth="1.5"
-                              strokeLinecap="round"
-                            >
-                              <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" />
-                            </svg>
-                            <p
-                              className="cs-font-body"
-                              style={{
-                                margin: 0,
-                                fontSize: "12px",
-                                color: "rgba(148,163,184,0.3)",
-                                fontStyle: "italic",
-                              }}
-                            >
-                              Sin datos para graficar
-                            </p>
+                            <LuLayers className="text-3xl text-slate-500" />
+                            <p className="m-0 text-xs text-slate-400 italic">Sin datos para graficar</p>
                           </>
                         )}
                       </div>
@@ -836,167 +314,53 @@ const Dashboard: React.FC = () => {
                   </div>
                 </div>
 
-                {/* Quick nav */}
-                <div className="cs-a4">
-                  <span
-                    className="cs-section-label"
-                    style={{ marginBottom: "12px", display: "block" }}
-                  >
-                    Navegación rápida
+                {/* ── Quick Navigation ── */}
+                <div className="animate-slide-up" style={{ animationDelay: '400ms' }}>
+                  <span className="block text-[11px] font-bold text-slate-500 uppercase tracking-widest mb-3 ml-1">
+                    Navegación Rápida
                   </span>
 
-                  <div
-                    style={{
-                      display: "grid",
-                      gridTemplateColumns: "1fr 1fr",
-                      gap: "12px",
-                    }}
-                  >
-                    {/* 1. Semestres */}
+                  <div className="grid grid-cols-2 gap-3">
+                    {/* Semestres */}
                     <button
-                      className="cs-nav-btn"
                       onClick={() => history.push("/terms")}
+                      className="bg-slate-800/40 backdrop-blur-sm border border-white/5 rounded-[20px] p-4 flex flex-col items-center gap-2.5 active:scale-95 hover:bg-slate-800/60 hover:border-indigo-500/30 transition-all"
                     >
-                      <div
-                        className="cs-nav-icon"
-                        style={{ background: "rgba(99,102,241,0.15)" }}
-                      >
-                        <svg
-                          width="22"
-                          height="22"
-                          viewBox="0 0 24 24"
-                          fill="none"
-                          stroke="#818cf8"
-                          strokeWidth="2.1"
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                        >
-                          <rect x="3" y="3" width="7" height="7" rx="1" />
-                          <rect x="14" y="3" width="7" height="7" rx="1" />
-                          <rect x="3" y="14" width="7" height="7" rx="1" />
-                          <rect x="14" y="14" width="7" height="7" rx="1" />
-                        </svg>
+                      <div className="w-11 h-11 rounded-2xl bg-indigo-500/15 flex items-center justify-center border border-indigo-500/20">
+                        <LuLayers className="text-indigo-400 text-xl" />
                       </div>
-                      <span
-                        className="cs-font-display"
-                        style={{
-                          fontSize: "12px",
-                          fontWeight: 700,
-                          color: "#cbd5e1",
-                        }}
-                      >
-                        Semestres
-                      </span>
+                      <span className="text-xs font-bold text-slate-200">Semestres</span>
                     </button>
 
-                    {/* 2. Calendario */}
+                    {/* Calendario */}
                     <button
-                      className="cs-nav-btn"
                       onClick={() => history.push("/calendar")}
+                      className="bg-slate-800/40 backdrop-blur-sm border border-white/5 rounded-[20px] p-4 flex flex-col items-center gap-2.5 active:scale-95 hover:bg-slate-800/60 hover:border-orange-500/30 transition-all"
                     >
-                      <div
-                        className="cs-nav-icon"
-                        style={{ background: "rgba(251,146,60,0.1)" }}
-                      >
-                        <svg
-                          width="22"
-                          height="22"
-                          viewBox="0 0 24 24"
-                          fill="none"
-                          stroke="#fb923c"
-                          strokeWidth="2.1"
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                        >
-                          <rect x="3" y="4" width="18" height="18" rx="2" />
-                          <line x1="16" y1="2" x2="16" y2="6" />
-                          <line x1="8" y1="2" x2="8" y2="6" />
-                          <line x1="3" y1="10" x2="21" y2="10" />
-                        </svg>
+                      <div className="w-11 h-11 rounded-2xl bg-orange-500/10 flex items-center justify-center border border-orange-500/20">
+                        <LuCalendarDays className="text-orange-400 text-xl" />
                       </div>
-                      <span
-                        className="cs-font-display"
-                        style={{
-                          fontSize: "12px",
-                          fontWeight: 700,
-                          color: "#cbd5e1",
-                        }}
-                      >
-                        Calendario
-                      </span>
+                      <span className="text-xs font-bold text-slate-200">Calendario</span>
                     </button>
 
-                    {/* 3. Métodos de Estudio */}
+                    {/* Métodos de Estudio (Toma el ancho completo) */}
                     <button
-                      className="cs-nav-btn"
                       onClick={() => history.push("/study-methods")}
-                      style={{
-                        gridColumn: "1 / -1",
-                        display: "flex",
-                        flexDirection: "row",
-                        alignItems: "center",
-                        justifyContent: "flex-start",
-                        padding: "16px 20px",
-                        gap: "16px",
-                      }}
+                      className="col-span-2 bg-slate-800/40 backdrop-blur-sm border border-white/5 rounded-[20px] p-4 flex items-center justify-start gap-4 active:scale-[0.98] hover:bg-slate-800/60 hover:border-purple-500/30 transition-all"
                     >
-                      <div
-                        className="cs-nav-icon"
-                        style={{
-                          background: "rgba(168,85,247,0.15)",
-                          margin: 0,
-                          flexShrink: 0,
-                        }}
-                      >
-                        <svg
-                          width="22"
-                          height="22"
-                          viewBox="0 0 24 24"
-                          fill="none"
-                          stroke="#c084fc"
-                          strokeWidth="2.1"
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                        >
-                          <circle cx="12" cy="12" r="10" />
-                          <polyline points="12 6 12 12 16 14" />
-                        </svg>
+                      <div className="w-11 h-11 rounded-2xl bg-purple-500/15 flex items-center justify-center shrink-0 border border-purple-500/20">
+                        <LuClock className="text-purple-400 text-xl" />
                       </div>
-                      <div
-                        style={{
-                          textAlign: "left",
-                          display: "flex",
-                          flexDirection: "column",
-                        }}
-                      >
-                        <span
-                          className="cs-font-display"
-                          style={{
-                            fontSize: "14px",
-                            fontWeight: 700,
-                            color: "#cbd5e1",
-                          }}
-                        >
-                          Métodos de Estudio
-                        </span>
-                        <span
-                          className="cs-font-body"
-                          style={{
-                            fontSize: "11px",
-                            color: "rgba(148,163,184,0.5)",
-                            fontWeight: 500,
-                            marginTop: "2px",
-                          }}
-                        >
-                          Pomodoro y Notas Rápidas
-                        </span>
+                      <div className="flex flex-col text-left">
+                        <span className="text-[13px] font-bold text-slate-200">Métodos de Estudio</span>
+                        <span className="text-[11px] text-slate-400 font-medium mt-0.5">Pomodoro y Notas Rápidas</span>
                       </div>
                     </button>
                   </div>
                 </div>
 
-                {/* NUEVO: Banner de Notificaciones unificado */}
-                <div className="cs-a4" style={{ animationDelay: "0.2s" }}>
+                {/* ── Notificaciones ── */}
+                <div className="animate-slide-up" style={{ animationDelay: '500ms' }}>
                   <NotificationBanner />
                 </div>
               </>

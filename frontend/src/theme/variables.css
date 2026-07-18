@@ -3,13 +3,88 @@
 
 /* El resto de tus variables de Ionic se mantienen intactas debajo de esto */
 :root {
-  --ion-color-primary: #3880ff;
+  --ion-color-primary: #6366f1; /* Indigo */
+  --ion-background-color: #020817;
+  --ion-text-color: #f8fafc;
+  color-scheme: dark;
 }
 
 ion-content {
   --background: transparent !important;
 }
 
-* ion-page {
-  background: transparent !important;
+ion-page {
+  background: #020817 !important;
+}
+
+/* ==========================================================================
+   SISTEMA DE DISEÑO CAMPUSYNC: GLASSMORPHISM & SOFT UI
+   ========================================================================== */
+@layer components {
+  /* Tarjeta principal de Cristal */
+  .cs-glass-card {
+    @apply bg-slate-900/60 backdrop-blur-2xl border border-indigo-500/20 rounded-[28px] shadow-[0_32px_64px_rgba(0,0,0,0.5),inset_0_1px_0_rgba(255,255,255,0.1)] p-7 sm:p-9 transition-all duration-300;
+  }
+
+  /* Inputs Neumórficos (Soft UI Inset) */
+  .cs-soft-input {
+    @apply flex items-center w-full h-13 px-4 rounded-2xl bg-[#0f172a]/80 border border-indigo-500/10 text-slate-100 transition-all duration-300 shadow-[inset_-2px_-2px_5px_rgba(255,255,255,0.02),inset_2px_2px_6px_rgba(0,0,0,0.4)];
+  }
+  .cs-soft-input:focus-within {
+    @apply border-indigo-500/50 bg-[#0f172a] shadow-[0_0_15px_rgba(99,102,241,0.15),inset_2px_2px_6px_rgba(0,0,0,0.5)];
+  }
+
+  /* Botón Principal (Elevación y Gradiente) */
+  .cs-btn-primary {
+    @apply relative w-full h-13 flex items-center justify-center gap-2 rounded-2xl font-bold tracking-wide text-white overflow-hidden transition-all duration-200 active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed;
+    background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 55%, #7c3aed 100%);
+    box-shadow: 0 4px 20px rgba(99, 102, 241, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.2);
+  }
+  .cs-btn-primary:hover:not(:disabled) {
+    @apply brightness-110;
+    box-shadow: 0 8px 30px rgba(99, 102, 241, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.25);
+  }
+
+  /* Modal Deslizante (Bottom Sheet) */
+  .cs-glass-sheet {
+    @apply bg-[#0b1121]/90 backdrop-blur-2xl border-t border-indigo-500/20 rounded-t-4xl shadow-[0_-10px_40px_rgba(0,0,0,0.6)] px-7 pb-10 pt-4 relative;
+  }
+}
+
+/* ==========================================================================
+   ANIMACIONES ACELERADAS POR GPU
+   ========================================================================== */
+@layer utilities {
+  .animate-slide-up {
+    animation: slideUpFade 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  }
+  .animate-float-orb-a {
+    animation: floatOrbA 9s ease-in-out infinite;
+  }
+  .animate-float-orb-b {
+    animation: floatOrbB 11s ease-in-out infinite;
+  }
+  .animate-sheet-up {
+    animation: sheetUp 0.4s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+  }
+}
+
+@keyframes slideUpFade {
+  from { opacity: 0; transform: translate3d(0, 20px, 0); }
+  to { opacity: 1; transform: translate3d(0, 0, 0); }
+}
+
+@keyframes sheetUp {
+  from { opacity: 0; transform: translate3d(0, 100%, 0); }
+  to { opacity: 1; transform: translate3d(0, 0, 0); }
+}
+
+@keyframes floatOrbA {
+  0%, 100% { transform: translate3d(0, 0, 0) scale(1); }
+  50% { transform: translate3d(18px, -28px, 0) scale(1.04); }
+}
+
+@keyframes floatOrbB {
+  0%, 100% { transform: translate3d(0, 0, 0) scale(1); }
+  50% { transform: translate3d(-14px, 22px, 0) scale(0.97); }
 }
